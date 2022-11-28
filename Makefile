@@ -31,7 +31,7 @@ fc=gfortran
 #flags=-O3 -fallow-argument-mismatch -fopenmp
 flags=-O3 -fallow-argument-mismatch
 #flags=-Og -fcheck=all -Wextra -fimplicit-none -fbacktrace -fallow-argument-mismatch 
-libs =-lcfitsio
+libs = -lcfitsio
 
 #flags=-march=native -ffast-math -funroll-loops -O3 -finline-limit=600
 #flags= -O3 -fbounds-check
@@ -48,9 +48,11 @@ myobjts= $(mysrc)/bk2.o                      \
          $(mysrc)/gaulegf.o           	     \
          $(mysrc)/probab.o           	     \
          $(mysrc)/scattxs.o                  \
-	       $(mysrc)/write_fits.o               \
+	     $(mysrc)/write_fits.o               \
+		 $(mysrc)/write_fits_angle.o         \
          $(mysrc)/super_Compton_RF.o         \
          $(mysrc)/super_Compton_RF_fits.o    \
+		 $(mysrc)/super_Compton_RF_fits_angle.o    \
 
 
 # Compile xstar with all subroutines

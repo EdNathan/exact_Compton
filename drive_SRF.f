@@ -31,9 +31,9 @@ c              Ekaterina Sokolova-Lapa (ekaterina.sokolova-lapa@fau.de)
 c
 c........    
       implicit none
-      integer nmaxp, itrans, mgi, ii
+      integer nmaxp, itrans, mgi, angle,ii
 
-      parameter (nmaxp=5000, itrans=70, mgi=3000)
+      parameter (nmaxp=500, itrans=70, mgi=8,angle=1)
       double precision pemin, pemax, pemax2
       double precision theta(itrans), wp(nmaxp), df(nmaxp)
       double precision skn(nmaxp,itrans)
@@ -70,23 +70,14 @@ c     Calculate the Compton Cross Section
 c
 c     Get the Gaussian quadratures for angular integration
       call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
-c      print *,smit
-c      smit1(1)=-1.d0
-c      smit1(mgi+2)=1.d0
-c      agt1(1)=smit(1)-(-1.d0)
-c      agt1(mgi+2)=1.d0-smit(mgi)
-c      do ii=1,mgi
-c            smit1(ii+1)=smit(ii)
-c            agt1(ii+1)=agt(ii)
-c      enddo
-c      agt1(2)=agt1(2)-agt1(1)
-c      agt1(mgi+1)=agt1(mgi+1)- agt1(mgi+2)
-c      print*,agt1
-c      print*,smit1
 c     Produce file with all SRF's
+      if (angle.eq.0)then
       call super_Compton_RF_fits(itrans, theta, nmaxp, wp, df, skn,
      1     mgi, smit, agt)
-c
+      else
+      call super_Compton_RF_fits_angle(itrans, theta, nmaxp, wp, df, 
+     & skn,mgi, smit, agt)
+      endif
 c     Get current time
       call cpu_time(tfin)
       tcpu=tfin-tini

@@ -1,22 +1,21 @@
-!-------------------------------------------------------------------------------------------------
-      subroutine super_Compton_RF_fits(itrans, theta, nmaxp, wp, df,
-     & skn,  mgi, smit, agt)
-c
-c     This routine writes a file with the super redistribution function (SRF) for Compton
-c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
+!-------------------------------------------------------------------------------------------------      
+      subroutine super_Compton_RF_fits_angle(itrans, theta, nmaxp, wp, 
+     & df,skn,  mgi, smit, agt) 
+c     This routine writes a file with the super redistribution function (SRF) for Compton 
+c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is 
 c     defined for a set of initial photon energies Ei as:
 c
 c         SRF(T,Ef,Ei) = IRF(Ef,Ei)/N(Ei)*skn(Ei)*dEi/Ei
-c
+c     
 c     where IRF(Ef,Ei) is in fact the inverse redistribution function for the Compton scattering
-c     of a photon from initial energy Ei to final energy Ef; N(Ei) is the normalization to
-c     ensure photon number conservation; and skn(Ei) is the Klein-Nishina cross section.
-c     This routine implements the exact Compton RF from Madej et al. (2017).
-c     The SRF contains all the information needed for the convolution of a given spectrum
+c     of a photon from initial energy Ei to final energy Ef; N(Ei) is the normalization to 
+c     ensure photon number conservation; and skn(Ei) is the Klein-Nishina cross section. 
+c     This routine implements the exact Compton RF from Madej et al. (2017). 
+c     The SRF contains all the information needed for the convolution of a given spectrum 
 c     to account for the Compton scattering at the given temperature.
 c     Only significant values of the SRF are actually written, i.e., when RF > limit.
 c
-c     Input arguments:
+c     Input arguments: 
 c         itrans: Total number of temperatures
 c         theta: Array (itrans) of temperatures in kT/mec2
 c         nmaxp: Total number of energy points
@@ -34,19 +33,22 @@ c     Requires:
 c         probab.f: Routine for the RF calculation
 c
       implicit none
-      integer itrans, nmaxp, mgi, iz, np
-      real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
+      include 'omp_lib.h'
+      integer itrans, nmaxp, mgi, iz, np,qq, jj, kk
+      real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans),x
       real*8 smit(mgi), agt(mgi)
-      real*8 check1(nmaxp), limit, pmin, pmax(nmaxp)
-      real*8 prob(nmaxp,nmaxp), srf
-      real*8 mec2, ecen, isp, ikbol, temp(itrans),check
-      integer jj, kk, point(nmaxp), indices(nmaxp,nmaxp),ind_arr(nmaxp)
-      integer :: n ,indmax(nmaxp)
+      real*8 check1(nmaxp), limit, pmax(nmaxp)
+      real*8 prob(nmaxp,nmaxp), srf(mgi,nmaxp,nmaxp)
+      real*8 mec2, ecen, isp, ikbol,profil, temp(itrans)
+      integer point(nmaxp), indices(nmaxp,nmaxp)
+      integer n ,indmax(nmaxp)
       character (len=200) filename
 ! Added by Gullo
-c$$$  double precision, allocatable :: srf_arr(:)
-      integer          :: unit, status
-      double precision :: srf_arr(nmaxp)
+      integer unit, status
+      double precision hhh,skkk,ccc,smhy,smel,esu,eee,sigma,pi,eve,evf
+      parameter (hhh= 6.62620d-27, skkk= 1.38062d-16, ccc= 2.99793d+10,
+     &           smhy= 1.67333d-24, smel= 9.10956d-28, esu= 4.80325d-10,
+     &           eee= 4.80325d-10, sigma=5.66961d-05, pi=3.141592654d0)
 c Initialize status
       status=0
 c
@@ -62,23 +64,22 @@ c$$$103   format(2i8,2ES16.8E3)
 c
 c     Check1 is to ensure photon number is conserved in scatterings
 
-      filename = 'table.fits' !name of the fits file
+      filename = 'angle.fits' !name of the fits file
       n = 1 ! column number of the fits file
 
-      call create_fits(filename) !create the fits file
-
+      call create_fits_angle(filename) !create the fits file
 
       do iz=1, itrans
             temp(iz) = theta(iz)*ikbol*mec2
-c            print *,temp(iz)
       enddo
 !crate and fill the first extension with temperature and energy
-      call write_param(itrans, nmaxp, temp, wp, filename)
-
+      call write_param_angle(itrans, nmaxp, temp, wp, filename,mgi,
+     & smit,agt)
 !append and other extension (3rd) to store the SRF
 !IMPORTANT: this routine leaves the fits file opened      
-      call add_HDU(itrans, nmaxp, filename, unit)
+      call add_HDU_angle(itrans, nmaxp,filename, unit)
       do iz = 1, itrans
+         x=1/theta(iz)
          do kk=1,nmaxp
             point(kk)=0
             pmax(kk)=0.d0
@@ -87,6 +88,9 @@ c            print *,temp(iz)
             do np = 1, nmaxp
                prob(np,kk) = 0.d0
                indices(np,kk)=0
+               do qq=1,mgi
+                  srf(qq,kk,np)=0.d0
+               enddo
             enddo
          enddo
 c
@@ -99,10 +103,13 @@ c$omp& agt,mec2,indmax)
 c$omp& private(jj)
 c$omp do
             do jj=1,nmaxp
-               call probab(temp(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
-     1          ,agt,prob(jj,np))
-               if(prob(jj,np).gt.pmax(np)) then
-                  pmax(np) = prob(jj,np)
+               do qq=1,mgi
+                  srf(qq,jj,np)=profil(1,wp(np)/mec2,wp(jj)/mec2,
+     &             smit(qq),x)
+                  prob(jj,np)=prob(jj,np)+agt(qq)*srf(qq,jj,np)
+               enddo
+               if(prob(jj,np).gt.pmax(np))then
+                  pmax(np)=prob(jj,np)
                   indmax(np)=jj
                endif
             enddo
@@ -110,12 +117,11 @@ c$omp end do
 c$omp end parallel
          enddo
          do np=1,nmaxp
-            check=0.d0
             do jj=indmax(np),1,-1
                   kk=point(jj)+1
                   if(prob(jj,np).ge.(pmax(np)*limit))then
                         indices(jj,kk)=np
-                        check=check+df(jj)*prob(jj,np)
+                        check1(np)=check1(np)+df(jj)*prob(jj,np)
                         point(jj)=kk
                   else
                         exit
@@ -126,14 +132,14 @@ c$omp end parallel
                   kk=point(jj)+1
                   if(prob(jj,np).ge.(pmax(np)*limit))then
                         indices(jj,kk)=np
-                        check=check+df(jj)*prob(jj,np)
+                        check1(np)=check1(np)+df(jj)*prob(jj,np)
                         point(jj)=kk
                   else
                         exit
                   endif
 
             enddo
-            check1(np)=check
+            srf(:,:,np)=srf(:,:,np)*skn(np,iz)*df(np)/wp(np)/check1(np)
          enddo
 
          
@@ -141,26 +147,16 @@ c$omp end parallel
 !     Once it calculates the srf it writes directly the fits file
 !     It needs to differentiate the first call, where it writes the extension from all the other calls 
       do jj = 1, nmaxp
-c         if (jj.lt.300)then
-c         print *,"*****",jj
-c         do kk=1,point(jj)
-c            print*,indices(jj,kk)
-c         enddo
-c         endif
-         do kk=1,nmaxp
-            srf_arr(kk) = 0.d0
-c            ind_arr(kk) = 0
-         enddo
-         do kk = 1, point(jj)
-            np=indices(jj,kk)
-            srf = prob(jj,np)*skn(np,iz)*df(np)/wp(np)/check1(np)
-!save the SRF array in order to pass it to the fits file routine   
-            srf_arr(kk) = srf
-c            ind_arr(kk) = np
-         enddo
-         call add_row_HDU(n, nmaxp, point(jj), indices(jj,1),
-     &        skn(jj,iz), srf_arr, unit)
-            n = n + 1           ! increment the row number
+            if(point(jj).gt.0)then
+            call add_row_HDU_angle(n,nmaxp,point(jj),indices(jj,1),mgi,
+     &       skn(jj,iz),
+     &        srf(:,jj,indices(jj,1):indices(jj,point(jj))),unit)
+            else
+            call add_row_HDU_angle(n,nmaxp,1,jj,mgi,
+     &       skn(jj,iz),
+     &        srf(:,jj,jj),unit)
+            endif
+            n = n + 1  
       enddo
                
       print *,iz
@@ -168,7 +164,6 @@ c            ind_arr(kk) = np
 c
      
 c The FITS file must always be closed before exiting the program. 
-
 c Any unit numbers allocated with FTGIOU must be freed with FTFIOU.
       write(*,*) 'final status', status
       call ftclos(unit, status)
@@ -176,7 +171,7 @@ c Any unit numbers allocated with FTGIOU must be freed with FTFIOU.
       call ftfiou(unit, status)
       write(*,*) 'final status', status
       if (status .gt. 0) then
-         call printerror(status)
+         call printerror_angle(status)
 c$$$         write(*,*) 'end file'
       endif
       return
