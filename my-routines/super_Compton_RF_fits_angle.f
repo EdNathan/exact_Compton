@@ -77,7 +77,7 @@ c     Check1 is to ensure photon number is conserved in scatterings
      & smit,agt)
 !append and other extension (3rd) to store the SRF
 !IMPORTANT: this routine leaves the fits file opened      
-      call add_HDU_angle(itrans, nmaxp,filename, unit)
+      call add_HDU(itrans, nmaxp,filename, unit)
       do iz = 1, itrans
          x=1/theta(iz)
          do kk=1,nmaxp
