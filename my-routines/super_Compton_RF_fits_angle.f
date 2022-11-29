@@ -67,7 +67,7 @@ c     Check1 is to ensure photon number is conserved in scatterings
       filename = 'angle.fits' !name of the fits file
       n = 1 ! column number of the fits file
 
-      call create_fits_angle(filename) !create the fits file
+      call create_fits(filename) !create the fits file
 
       do iz=1, itrans
             temp(iz) = theta(iz)*ikbol*mec2
@@ -171,7 +171,7 @@ c Any unit numbers allocated with FTGIOU must be freed with FTFIOU.
       call ftfiou(unit, status)
       write(*,*) 'final status', status
       if (status .gt. 0) then
-         call printerror_angle(status)
+         call printerror(status)
 c$$$         write(*,*) 'end file'
       endif
       return
