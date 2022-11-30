@@ -31,9 +31,11 @@ c              Ekaterina Sokolova-Lapa (ekaterina.sokolova-lapa@fau.de)
 c
 c........    
       implicit none
-      integer nmaxp, itrans, mgi, angle,ii
-
-      parameter (nmaxp=500, itrans=70, mgi=8,angle=1)
+      integer nmaxp, itrans, mgi
+      parameter (nmaxp=500, itrans=70, mgi=8)
+      logical angle
+      parameter (angle=.true.)
+      integer ii
       double precision pemin, pemax, pemax2
       double precision theta(itrans), wp(nmaxp), df(nmaxp)
       double precision skn(nmaxp,itrans)
@@ -61,22 +63,20 @@ c     Photon energy grid
       pemin = 0.1d0
       pemax = 9.9d5
       pemax2 = 1.d6
-      call enegrd(nmaxp, pemin, pemax, pemax2,
-     1            wp, df)
+      call enegrd(nmaxp, pemin, pemax, pemax2, wp, df)
 c
 c     Calculate the Compton Cross Section
-      call scattxs(nmaxp, wp, itrans, theta,
-     1             skn)
+      call scattxs(nmaxp, wp, itrans, theta, skn)
 c
 c     Get the Gaussian quadratures for angular integration
       call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
 c     Produce file with all SRF's
-      if (angle.eq.0)then
-      call super_Compton_RF_fits(itrans, theta, nmaxp, wp, df, skn,
-     1     mgi, smit, agt)
+      if (angle) then
+            call super_Compton_RF_fits(itrans, theta, nmaxp, wp, df, skn,
+     &                                 mgi, smit, agt)
       else
-      call super_Compton_RF_fits_angle(itrans, theta, nmaxp, wp, df, 
-     & skn,mgi, smit, agt)
+            call super_Compton_RF_fits_angle(itrans, theta, nmaxp, wp, df,
+     &                                       skn,mgi, smit, agt)
       endif
 c     Get current time
       call cpu_time(tfin)
