@@ -93,21 +93,22 @@ c
 c         temp = theta(iz)*ikbol*mec2          ! temperature in K
          do np = 1, nmaxp
             ecen = wp(np)
-c$omp parallel num_threads(30)
-c$omp& shared(iz,wp,prob,point,pmax,nmaxp,np,ecen,temp,mgi,smit,
-c$omp& agt,mec2,indmax)
-c$omp& private(jj)
-c$omp do
+!$omp parallel 
+!$omp& shared(iz, wp, prob, point, pmax, nmaxp, np, ecen, temp, mgi,
+!$omp&         smit, agt, mec2, indmax)
+!$omp& private(jj)
+!$omp do
+!$    write(*,*)"Thread ",OMP_get_thread_num()," of ",OMP_get_num_threads()
             do jj=1,nmaxp
                call probab(temp(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
-     1          ,agt,prob(jj,np))
+     &          ,agt,prob(jj,np))
                if(prob(jj,np).gt.pmax(np)) then
                   pmax(np) = prob(jj,np)
                   indmax(np)=jj
                endif
             enddo
-c$omp end do
-c$omp end parallel
+!$omp end do
+!$omp end parallel
          enddo
          do np=1,nmaxp
             check=0.d0

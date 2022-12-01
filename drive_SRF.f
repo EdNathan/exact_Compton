@@ -33,8 +33,8 @@ c........
       implicit none
       integer nmaxp, itrans, mgi
       parameter (nmaxp=500, itrans=70, mgi=8)
-      logical angle
-      parameter (angle=.true.)
+      logical avangle
+      parameter (avangle=.false.)
       integer ii
       double precision pemin, pemax, pemax2
       double precision theta(itrans), wp(nmaxp), df(nmaxp)
@@ -43,6 +43,10 @@ c........
       double precision smit(mgi), agt(mgi)
       double precision tini, tfin, tcpu, temp
 c
+
+C     This line is only ran if the compiler can handle parallisation
+!$    write(*,*)"Parallisation is possible"
+
 c     Get current time
       call cpu_time(tini)
 c
@@ -71,12 +75,12 @@ c
 c     Get the Gaussian quadratures for angular integration
       call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
 c     Produce file with all SRF's
-      if (angle) then
-            call super_Compton_RF_fits(itrans, theta, nmaxp, wp, df, skn,
-     &                                 mgi, smit, agt)
+      if (avangle) then
+            call super_Compton_RF_fits(itrans, theta, nmaxp, wp, df,
+     &                                 skn, mgi, smit, agt)
       else
-            call super_Compton_RF_fits_angle(itrans, theta, nmaxp, wp, df,
-     &                                       skn,mgi, smit, agt)
+            call super_Compton_RF_fits_angle(itrans, theta, nmaxp, wp,
+     &                                       df, skn, mgi, smit, agt)
       endif
 c     Get current time
       call cpu_time(tfin)
