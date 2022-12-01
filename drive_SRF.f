@@ -49,7 +49,7 @@ c........
 c
 
 C     This line is only ran if the compiler can handle parallisation
-!$    write(*,*)"Parallised over ",OMP_get_num_threads()
+!$    write(*,*)"Parallisation is possible"
 
 c     Get current time
       call cpu_time(tini)
