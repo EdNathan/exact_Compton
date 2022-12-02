@@ -150,7 +150,7 @@ c     Filling the columns
 
       colnum = 4
 c     Fill the column with arrays of different size
-      call ftpcld(unit, colnum, rownum, 1, out_en_dim*8, srf, status)         
+      call ftpcld(unit, colnum, rownum, 1, out_en_dim*mgi, srf, status)         
 
 c     The FITS file must always be closed before exiting the program. 
 c     Any unit numbers allocated with FTGIOU must be freed with FTFIOU.
