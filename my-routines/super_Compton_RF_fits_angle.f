@@ -32,30 +32,29 @@ c
 c     Requires:
 c         probab.f: Routine for the RF calculation
 c
+!$    use omp_lib
+      use constants
       implicit none
       include 'omp_lib.h'
       integer itrans, nmaxp, mgi, iz, np,qq, jj, kk
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans),x
       real*8 smit(mgi), agt(mgi)
-      real*8 check1(nmaxp), limit, pmax(nmaxp)
+      real*8 check1(nmaxp), pmax(nmaxp)
       real*8 prob(nmaxp,nmaxp), srf(mgi,nmaxp,nmaxp)
-      real*8 mec2, ecen, isp, ikbol,profil, temp(itrans)
+      real*8  ecen, profil, temp(itrans)
       integer point(nmaxp), indices(nmaxp,nmaxp)
       integer n ,indmax(nmaxp)
       character (len=200) filename
 ! Added by Gullo
       integer unit, status
-      double precision hhh,skkk,ccc,smhy,smel,esu,eee,sigma,pi,eve,evf
+      double precision hhh,skkk,ccc,smhy,smel,esu,eee,sigma,eve,evf
       parameter (hhh= 6.62620d-27, skkk= 1.38062d-16, ccc= 2.99793d+10,
      &           smhy= 1.67333d-24, smel= 9.10956d-28, esu= 4.80325d-10,
-     &           eee= 4.80325d-10, sigma=5.66961d-05, pi=3.141592654d0)
+     &           eee= 4.80325d-10, sigma=5.66961d-05)
 c Initialize status
       status=0
 c
-      ikbol   = 1.16d4      ! inverse of kbol (K * ev-1)
-      mec2  = 5.11d5        ! m_e c^2 (eV)
-      isp = 0.5641895835d0  ! 1/sqrt(pi)
-      limit = 1.d-3         ! Limit for the redistribution function
+
 c
 c$$$100   format(2i8)
 c$$$101   format(i8,ES16.8E3)
@@ -97,11 +96,11 @@ c
 c         temp = theta(iz)*ikbol*mec2          ! temperature in K
          do np = 1, nmaxp
             ecen = wp(np)
-c$omp parallel num_threads(30)
-c$omp& shared(iz,wp,prob,point,pmax,nmaxp,np,ecen,temp,mgi,smit,
-c$omp& agt,mec2,indmax)
-c$omp& private(jj)
-c$omp do
+!$omp parallel
+!$omp& shared(iz,wp,prob,point,pmax,nmaxp,np,ecen,temp,mgi,smit,
+!$omp& agt,indmax)
+!$omp& private(jj)
+!$omp do
             do jj=1,nmaxp
                do qq=1,mgi
                   srf(qq,jj,np)=profil(1,wp(np)/mec2,wp(jj)/mec2,

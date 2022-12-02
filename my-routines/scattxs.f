@@ -5,17 +5,17 @@ c     Compute the exact Compton cross section taking into account
 c     the Klein-Nishina corrections at high energies, and the 
 c     relativistic corrections at high temperatures (T>1.e8 K)
 c
-      use omp_lib
+!$    use omp_lib
+      use constants
       implicit none
       integer nmaxp, np, itrans, iz
-      real*8 xloc, sigma_t
+      real*8 xloc
       real*8 skn(nmaxp,itrans), ixloc, wp(nmaxp), theta(itrans)
 c
-      sigma_t = 6.65d-25   ! Thomson cross section
 c
       do iz = 1, itrans
 !$omp parallel
-!$omp& shared(iz,nmaxp,wp,theta,skn,sigma_t)
+!$omp& shared(iz,nmaxp,wp,theta,skn)
 !$omp& private(np,xloc,ixloc)
 !$omp do
          do np=1, nmaxp

@@ -33,14 +33,16 @@ c
 c     Requires:
 c         probab.f: Routine for the RF calculation
 c
+!$    use omp_lib
+      use constants
       implicit none
       include 'omp_lib.h'
       integer itrans, nmaxp, mgi, iz, np
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
       real*8 smit(mgi), agt(mgi)
-      real*8 check1(nmaxp), limit, pmin, pmax(nmaxp)
+      real*8 check1(nmaxp), pmin, pmax(nmaxp)
       real*8 prob(nmaxp,nmaxp), srf
-      real*8 mec2, ecen, isp, ikbol, temp(itrans),check
+      real*8 ecen, temp(itrans),check
       integer jj, kk, point(nmaxp), indices(nmaxp,nmaxp),ind_arr(nmaxp)
       integer :: n ,indmax(nmaxp)
       character (len=200) filename
@@ -51,10 +53,7 @@ c$$$  double precision, allocatable :: srf_arr(:)
 c Initialize status
       status=0
 c
-      ikbol   = 1.16d4      ! inverse of kbol (K * ev-1)
-      mec2  = 5.11d5        ! m_e c^2 (eV)
-      isp = 0.5641895835d0  ! 1/sqrt(pi)
-      limit = 1.d-3         ! Limit for the redistribution function
+
 c
 c$$$100   format(2i8)
 c$$$101   format(i8,ES16.8E3)
@@ -96,7 +95,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
             ecen = wp(np)
 !$omp parallel 
 !$omp& shared(iz, wp, prob, point, pmax, nmaxp, np, ecen, temp, mgi,
-!$omp&         smit, agt, mec2, indmax)
+!$omp&         smit, agt, indmax)
 !$omp& private(jj)
 !$omp do
             do jj=1,nmaxp

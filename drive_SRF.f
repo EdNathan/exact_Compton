@@ -1,5 +1,4 @@
-      program drive_SRF
-      use omp_lib   
+      program drive_SRF 
 c     Driving program for the writting of the Super Redistribution Function SRF
 c     due to Compton scattering (see more details in super_Compton_RF.f).
 c     The output of this code is used by the XILLVER code. 
@@ -30,6 +29,7 @@ c     Authors: Javier Garcia (javier@caltech.edu)
 c              Ekaterina Sokolova-Lapa (ekaterina.sokolova-lapa@fau.de)
 c
 c........    
+      use omp_lib
       implicit none
       integer nmaxp, itrans, mgi
       parameter (nmaxp=500, itrans=70, mgi=8)
@@ -39,17 +39,12 @@ c........
       double precision pemin, pemax, pemax2
       double precision theta(itrans), wp(nmaxp), df(nmaxp)
       double precision skn(nmaxp,itrans)
-      double precision ikbol, ergsev, mec2, pi
       double precision smit(mgi), agt(mgi)
       double precision tini, tfin, tcpu, temp
-      parameter (ergsev  = 1.602197d-12     ) ! Convert eV to ergs
-      parameter (ikbol   = 1.16d4           ) ! inverse of kbol (K * ev-1)
-      parameter (pi      = 4.d0*datan(1.d0) ) ! pi number
-      parameter (mec2    = 5.11d5           ) ! m_e c^2 (eV)
-c
+     
 
 C     This line is only ran if the compiler can handle parallisation
-!$    write(*,*)"Parallisation is possible"
+!$    write(*,*)"Parallised over ",OMP_get_max_threads()
 
 c     Get current time
       call cpu_time(tini)
@@ -60,7 +55,7 @@ c
 c     Array of temperatures
       temp = 1.d4                ! Gas temp in K
       do ii=1,itrans
-         theta(ii) = temp/ikbol/mec2
+         call theta_from_temp(temp, theta(ii))
          temp = temp*(1.d10/1.d4)**(1.d0/dfloat(itrans-1))
       enddo
 c

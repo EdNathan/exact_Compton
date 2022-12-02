@@ -50,17 +50,19 @@ code=$(name).f
 exec=$(name).x
 mysrc=my-routines
 
-myobjts= $(mysrc)/bk2.o                      \
-         $(mysrc)/crsexact.o                 \
-         $(mysrc)/enegrd.o                   \
-         $(mysrc)/gaulegf.o           	     \
-         $(mysrc)/probab.o           	     \
-         $(mysrc)/scattxs.o                  \
-	     $(mysrc)/write_fits.o               \
-		 $(mysrc)/write_fits_angle.o         \
-         $(mysrc)/super_Compton_RF.o         \
-         $(mysrc)/super_Compton_RF_fits.o    \
-		 $(mysrc)/super_Compton_RF_fits_angle.o    \
+myobjts= $(mysrc)/constants.o                    \
+         $(mysrc)/bk2.o                          \
+         $(mysrc)/crsexact.o                     \
+         $(mysrc)/enegrd.o                       \
+         $(mysrc)/gaulegf.o           	         \
+         $(mysrc)/probab.o           	         \
+         $(mysrc)/scattxs.o                      \
+         $(mysrc)/write_fits.o                   \
+         $(mysrc)/write_fits_angle.o             \
+         $(mysrc)/super_Compton_RF.o             \
+         $(mysrc)/super_Compton_RF_fits.o        \
+         $(mysrc)/super_Compton_RF_fits_angle.o  \
+         
 
 
 # Compile xstar with all subroutines
@@ -74,6 +76,7 @@ $(myobjts): %.o: %.f
 # Clean all objects
 clean:
 	rm $(mysrc)/*.o
+	rm *.mod
 	rm $(exec)
 
 all:
