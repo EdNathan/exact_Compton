@@ -31,6 +31,14 @@ fc=gfortran
 #flags=-O3 -fallow-argument-mismatch -fopenmp
 flags=-O3 -fallow-argument-mismatch
 #flags=-Og -fcheck=all -Wextra -fimplicit-none -fbacktrace -fallow-argument-mismatch 
+
+# If Make is called with the -k flag, add the -fopenmp
+# This allows the compiler to understand the OMP library for parallisation
+# Note (for future):  -fopenmp is applicable for gfortran.  Intel Compilers use -qopenmp
+ifneq (,$(findstring k,$(MAKEFLAGS)))
+flags += -fopenmp
+endif
+
 libs = -lcfitsio
 
 #flags=-march=native -ffast-math -funroll-loops -O3 -finline-limit=600
@@ -75,3 +83,4 @@ all:
 # Tue Dec 18 14:13:06 EST 2007
 # Javier Garcia
 # Modified Dec 28 T. Kallman
+# Modified Dec 01 (2022) E. Nathan

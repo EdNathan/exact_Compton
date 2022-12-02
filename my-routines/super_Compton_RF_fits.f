@@ -34,6 +34,7 @@ c     Requires:
 c         probab.f: Routine for the RF calculation
 c
       implicit none
+      include 'omp_lib.h'
       integer itrans, nmaxp, mgi, iz, np
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
       real*8 smit(mgi), agt(mgi)
@@ -98,7 +99,6 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
 !$omp&         smit, agt, mec2, indmax)
 !$omp& private(jj)
 !$omp do
-!$    write(*,*)"Thread ",OMP_get_thread_num()," of ",OMP_get_num_threads()
             do jj=1,nmaxp
                call probab(temp(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
      &          ,agt,prob(jj,np))

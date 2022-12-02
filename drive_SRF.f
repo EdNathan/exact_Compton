@@ -42,19 +42,20 @@ c........
       double precision ikbol, ergsev, mec2, pi
       double precision smit(mgi), agt(mgi)
       double precision tini, tfin, tcpu, temp
+      parameter (ergsev  = 1.602197d-12     ) ! Convert eV to ergs
+      parameter (ikbol   = 1.16d4           ) ! inverse of kbol (K * ev-1)
+      parameter (pi      = 4.d0*datan(1.d0) ) ! pi number
+      parameter (mec2    = 5.11d5           ) ! m_e c^2 (eV)
 c
 
 C     This line is only ran if the compiler can handle parallisation
-!$    write(*,*)"Parallisation is possible"
+!$    write(*,*)"Parallised over ",OMP_get_num_threads()
 
 c     Get current time
       call cpu_time(tini)
 c
 c
-      ergsev  = 1.602197d-12     ! Convert eV to ergs
-      ikbol   = 1.16d4           ! inverse of kbol (K * ev-1)
-      pi      = 4.d0*datan(1.d0) ! pi number
-      mec2    = 5.11d5           ! m_e c^2 (eV)
+
 c
 c     Array of temperatures
       temp = 1.d4                ! Gas temp in K
