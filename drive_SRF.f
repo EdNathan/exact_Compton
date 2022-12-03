@@ -32,16 +32,28 @@ c........
       use omp_lib
       implicit none
       integer nmaxp, itrans, mgi
-      parameter (nmaxp=500, itrans=70, mgi=8)
+      ! parameter (nmaxp=500, itrans=70, mgi=8)
       logical avangle
-      parameter (avangle=.false.)
+      ! parameter (avangle=.false.)
       integer ii
       double precision pemin, pemax, pemax2
-      double precision theta(itrans), wp(nmaxp), df(nmaxp)
-      double precision skn(nmaxp,itrans)
-      double precision smit(mgi), agt(mgi)
+      double precision, allocatable :: theta(:), wp(:), df(:)
+      double precision, allocatable ::  skn(:,:)
+      double precision, allocatable ::  smit(:), agt(:)
       double precision tini, tfin, tcpu, temp
      
+c     For now, hard code values
+      nmaxp = 500
+      itrans = 70
+      mgi = 8
+      avangle = .false.
+
+c     Allocate arrays
+      allocate ( theta(itrans), wp(nmaxp), df(nmaxp) )
+      allocate ( skn(nmaxp,itrans) )
+      allocate ( smit(mgi), agt(mgi) )
+
+
 
 C     This line is only ran if the compiler can handle parallisation
 !$    write(*,*)"Parallised over ",OMP_get_max_threads()
