@@ -35,18 +35,56 @@ c........
       ! parameter (nmaxp=500, itrans=70, mgi=8)
       logical avangle
       ! parameter (avangle=.false.)
-      integer ii
+      character*(*) input_file
+      character (len=255) file_line
+      parameter (input_file = 'drive_params.dat') 
+      logical exist
+      integer ii, file_unit, file_stat, convert_stat
       double precision pemin, pemax, pemax2
       double precision, allocatable :: theta(:), wp(:), df(:)
       double precision, allocatable ::  skn(:,:)
       double precision, allocatable ::  smit(:), agt(:)
       double precision tini, tfin, tcpu, temp
-     
-c     For now, hard code values
+
+c     Default values
       nmaxp = 500
       itrans = 70
-      mgi = 8
-      avangle = .false.
+      mgi = 3000
+      avangle = .true.
+
+c     Handle parameter file
+      inquire( file=input_file, exist=exist )
+      if (exist) then
+        open(newunit=file_unit, file='drive_params.dat', 
+     &       action='READ', iostat=file_stat )
+c       If file exists, loop through lines            
+        do while (file_stat .eq. 0)
+          read(file_unit, '(A255)', iostat=file_stat) file_line
+c         Exit if EOF
+          if (file_stat .ne. 0) exit
+c         Read possible parameters
+          file_line = trim(file_line)
+          convert_stat = 1
+          if (file_line(:6) .eq. 'nmaxp') then
+            read( file_line(6:), *, iostat=convert_stat) nmaxp
+          elseif (file_line(:6) .eq. 'itrans') then
+            read( file_line(7:), *, iostat=convert_stat) itrans
+          elseif (file_line(:3) .eq. 'mgi') then
+            read( file_line(4:), *, iostat=convert_stat) mgi
+          elseif (file_line(:7) .eq. 'avangle') then
+            read( file_line(8:), *, iostat=convert_stat) avangle
+          endif
+          if (convert_stat .ne. 0) then
+            write(*,*)"Failed to understand ",trim(file_line)
+          endif
+        end do
+        close(file_unit)
+      endif
+
+      write(*,*)'Using nmaxp:   ', nmaxp
+      write(*,*)'Using itrans:  ', itrans
+      write(*,*)'Using mgi:     ', mgi
+      write(*,*)'Using avagnle: ', avangle
 
 c     Allocate arrays
       allocate ( theta(itrans), wp(nmaxp), df(nmaxp) )
