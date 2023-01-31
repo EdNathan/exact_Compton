@@ -101,13 +101,15 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
             do jj=1,nmaxp
                call probab(temp(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
      &          ,agt,prob(jj,np))
+            enddo
+!$omp end do
+!$omp end parallel
+            do jj=1,nmaxp
                if(prob(jj,np).gt.pmax(np)) then
                   pmax(np) = prob(jj,np)
                   indmax(np)=jj
                endif
             enddo
-!$omp end do
-!$omp end parallel
          enddo
          do np=1,nmaxp
             check=0.d0

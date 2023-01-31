@@ -107,10 +107,14 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
      &             smit(qq),x)
                   prob(jj,np)=prob(jj,np)+agt(qq)*srf(qq,jj,np)
                enddo
-               if(prob(jj,np).gt.pmax(np))then
-                  pmax(np)=prob(jj,np)
-                  indmax(np)=jj
-               endif
+            enddo
+!$omp end do
+!$omp end parallel
+            do jj=1,nmaxp
+                  if(prob(jj,np).gt.pmax(np))then
+                        pmax(np)=prob(jj,np)
+                        indmax(np)=jj
+                  endif
             enddo
 c$omp end do
 c$omp end parallel
@@ -148,12 +152,14 @@ c$omp end parallel
       do jj = 1, nmaxp
             if(point(jj).gt.0)then
             call add_row_HDU_angle(n,nmaxp,point(jj),indices(jj,1),mgi,
-     &       skn(jj,iz),
-     &        srf(:,jj,indices(jj,1):indices(jj,point(jj))),unit)
+     &                  skn(jj,iz),
+     &                  srf(:,jj,indices(jj,1):indices(jj,point(jj))),
+     &                  unit)
             else
             call add_row_HDU_angle(n,nmaxp,1,jj,mgi,
-     &       skn(jj,iz),
-     &        srf(:,jj,jj),unit)
+     &                  skn(jj,iz),
+     &                  srf(:,jj,jj),
+     &                  unit)
             endif
             n = n + 1  
       enddo

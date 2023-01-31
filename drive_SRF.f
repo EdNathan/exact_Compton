@@ -84,7 +84,7 @@ c         Read possible parameters
       write(*,*)'Using nmaxp:   ', nmaxp
       write(*,*)'Using itrans:  ', itrans
       write(*,*)'Using mgi:     ', mgi
-      write(*,*)'Using avagnle: ', avangle
+      write(*,*)'Using avangle: ', avangle
 
 c     Allocate arrays
       allocate ( theta(itrans), wp(nmaxp), df(nmaxp) )
