@@ -8,18 +8,16 @@ c........
 c........ Algorithm used in computations:
 c........  nr=1 : exact by Suleimanov et al. (2012), Madej et al. (2017)
 c........
+      use constants
       implicit none
       integer i,idiv,mgi,in,j
       double precision smit(mgi),agt(mgi),xprime,step,xlow,xhigh
       double precision x,xdim,z,eps,eps1,temper,steplg
       double precision profil,redist1,total1
-      double precision hhh,skkk,ccc,smhy,smel,esu,eee,sigma,pi,eve,evf
       double precision total,disp,ecentr,gauss,enprim,encent
-      parameter (hhh= 6.62620d-27, skkk= 1.38062d-16, ccc= 2.99793d+10,
-     *          smhy= 1.67333d-24, smel= 9.10956d-28, esu= 4.80325d-10,
-     *           eee= 4.80325d-10, sigma=5.66961d-05, pi=3.141592654d0)
+
 c........	       eV - associated energy	  erg
-      parameter ( eve=1.60219d-12,  evf=2.41838d+14 )
+      ! parameter ( eve=1.60219d-12,  evf=2.41838d+14 )
       x=smel*ccc**2/skkk/temper
       eps=encent
       eps1=enprim

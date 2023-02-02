@@ -13,13 +13,12 @@ c........ test in range of electron temperature [8e-3 - 1.7] mc^2
 c........ (around [5e+7 - 1e+10] Kelvins).
 c........ below 1e+8 K the Klein-Nishina cross section can be used.
 
-
+      use constants
       implicit none
       integer i, gi, ki
       parameter (gi = 200)
       double precision eps, theta, totalcrs
-      double precision mec2, sigma_t, g_m1, aj, mn, x, bk2, crsgm
-      parameter (sigma_t = 6.65246d-25)
+      double precision g_m1, aj, mn, x, bk2, crsgm
       dimension g_m1(gi), aj(gi)
 
       if (eps.le.1d-4) then

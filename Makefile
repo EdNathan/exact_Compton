@@ -51,8 +51,9 @@ name=drive_SRF
 code=$(name).f
 exec=$(name).x
 mysrc=my-routines
+mymodsrc=my-modules
 
-myobjts= $(mysrc)/constants.o                    \
+myobjts= $(mymodsrc)/constants.o                 \
          $(mysrc)/bk2.o                          \
          $(mysrc)/crsexact.o                     \
          $(mysrc)/enegrd.o                       \
@@ -64,11 +65,10 @@ myobjts= $(mysrc)/constants.o                    \
          $(mysrc)/super_Compton_RF.o             \
          $(mysrc)/super_Compton_RF_fits.o        \
          $(mysrc)/super_Compton_RF_fits_angle.o  \
-         
 
 
 # Compile xstar with all subroutines
-$(exec): $(myobjts)
+$(exec):  $(myobjts)
 	$(fc) $(flags) $(code) $(myobjts) $(libs) -o $(exec)
 
 # Compile and create objects (XILLVER)
@@ -78,6 +78,7 @@ $(myobjts): %.o: %.f
 # Clean all objects
 clean:
 	rm $(mysrc)/*.o
+	rm $(mymodsrc)/*.o
 	rm *.mod
 	rm $(exec)
 

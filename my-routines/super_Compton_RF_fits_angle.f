@@ -47,10 +47,7 @@ c
       character (len=200) filename
 ! Added by Gullo
       integer unit, status
-      double precision hhh,skkk,ccc,smhy,smel,esu,eee,sigma,eve,evf
-      parameter (hhh= 6.62620d-27, skkk= 1.38062d-16, ccc= 2.99793d+10,
-     &           smhy= 1.67333d-24, smel= 9.10956d-28, esu= 4.80325d-10,
-     &           eee= 4.80325d-10, sigma=5.66961d-05)
+
 c Initialize status
       status=0
 c
