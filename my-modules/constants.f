@@ -4,14 +4,13 @@ c     This module contains a number of physical and mathematical constants.
 c     This is included so they don't need repeated definitions.
 c      
       implicit none 
-      double precision ergsev, ikbol, pi, mec2, isp, limit, sigma_t
+      double precision ergsev, ikbol, pi, mec2, isp, sigma_t
       double precision hhh, skkk, ccc, smhy, smel, esu, eee, sigma
       parameter (ergsev  = 1.602197d-12     ) ! Convert eV to ergs
       parameter (ikbol   = 1.16d4           ) ! inverse of kbol (K * ev-1)
       parameter (pi      = 4.d0*datan(1.d0) ) ! pi number
       parameter (mec2    = 5.11d5           ) ! m_e c^2 (eV)
       parameter (isp     = 0.5641895835d0   ) ! 1/sqrt(pi)
-      parameter (limit   = 1.d-3            ) ! Limit for the redistribution function
       parameter (sigma_t = 6.65d-25         ) ! Thomson cross section
       
       parameter (hhh     = 6.62620d-27      )

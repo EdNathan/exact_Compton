@@ -1,4 +1,4 @@
-      subroutine probab(temper,enprim,encent,mgi,smit,agt,total)
+      subroutine probab(theta,enprim,encent,mgi,smit,agt,total)
 c........ 
 c........ Compton scattering in gas of relativistic thermal electrons.
 c........
@@ -12,13 +12,13 @@ c........
       implicit none
       integer i,idiv,mgi,in,j
       double precision smit(mgi),agt(mgi),xprime,step,xlow,xhigh
-      double precision x,xdim,z,eps,eps1,temper,steplg
+      double precision x,xdim,z,eps,eps1,theta,steplg
       double precision profil,redist1,total1
       double precision total,disp,ecentr,gauss,enprim,encent
 
 c........	       eV - associated energy	  erg
       ! parameter ( eve=1.60219d-12,  evf=2.41838d+14 )
-      x=smel*ccc**2/skkk/temper
+      x= 1/theta ! smel*ccc**2/skkk/temper
       eps=encent
       eps1=enprim
       xdim=eps*smel*ccc**2/hhh              ! in Hz      frequency
