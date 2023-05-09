@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------------------------------      
       subroutine super_Compton_RF_fits_angle(itrans, temps, theta,
      &                                       nmaxp, wp, df, skn, mgi,
-     &                                       nksmps, limit) 
+     &                                       smit, agt, nksmps, limit) 
 c     This routine writes a file with the super redistribution function (SRF) for Compton
 c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
 c     defined for a set of initial photon energies Ei as:
@@ -37,10 +37,6 @@ c     Requires:
 c         probab.f: Routine for the RF calculation
 c
 c
-c     Important variables:
-c         mu: Array (mgi) Angle co-ordinates
-c         dmu: Array (mgi) Angle differences
-c
 !$    use omp_lib
       use constants
       use fits_writing
@@ -49,7 +45,7 @@ c
       integer nksmps, inang, outang
       real*8 A, B
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans),x
-      real*8 mu(mgi), dmu(mgi)
+      real*8 smit(mgi), agt(mgi)
       real*8 kords(nksmps), kweights(nksmps)
       real*8 check
       real*8 profil, temps(itrans)
@@ -68,23 +64,13 @@ c     flatfs and flatfl are pointers to fSInd and fLen to make it easier to deal
       flatfs(1:mgi*nmaxp, 1:itrans) => fSInd
       flatfl(1:mgi*nmaxp, 1:itrans) => fLen
 
-c     Make angle grid
-      do qq = 1, mgi
-         mu(qq) = (qq - 0.5d0)/dfloat(mgi)
-         dmu(qq) = 1.d0 / dfloat(mgi)
-      enddo
-
       call set_filename('angle.fits') !name of the fits file
       n = 1 ! column number of the fits file
       
 c     Set up a new fits file
       call setup_new_file(nmaxp, itrans, mgi,
-     &                    wp, temps, mu,
+     &                    wp, temps, smit, agt,
      &                    skn, limit, .FALSE., nksmps) !create the fits file
-
-        
-
-      call gaulegf(-1.d0, 1.d0, kords, kweights, nksmps)
 
       do iz = 1, itrans
          x=1/theta(iz)
@@ -94,13 +80,13 @@ c     Set up a new fits file
 c        srf( init_ang, init_en, final_ang, final_en  )
          do inang=1, mgi
 !$omp parallel
-!$omp& shared(iz,wp,nmaxp,mgi,mu,x,srf,kords,kweights)
+!$omp& shared(iz,wp,nmaxp,mgi,smit,x,srf,kords,kweights)
 !$omp& private(np,jj,qq,A,B)
 !$omp do
             do np = 1, nmaxp ! initial energy
                do outang=inang, mgi
-                  A = sqrt((1-mu(inang)**2)*(1-mu(outang)**2))
-                  B = mu(inang) * mu(outang)
+                  A = sqrt((1-smit(inang)**2)*(1-smit(outang)**2))
+                  B = smit(inang) * smit(outang)
                   do jj=1,nmaxp ! final energy
 c                    Do azimuthal integration
                      do qq=1,nksmps
@@ -152,7 +138,7 @@ c        srf( init_ang, init_en, final_ang, final_en  )
                do outang=1,mgi ! final angle
                   do jj=1,nmaxp ! final energy
                      check = check  
-     1                 + df(jj) * srf(inang,np,outang,jj) * dmu(outang)
+     1                 + df(jj) * srf(inang,np,outang,jj) * agt(outang)
                   enddo
                enddo
                check = check / 2

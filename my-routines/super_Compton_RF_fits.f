@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------------------------------
       subroutine super_Compton_RF_fits(itrans, temps, theta, 
      &                                 nmaxp, wp, df, skn, mgi, 
-     &                                 limit)
+     &                                 smit, agt, limit)
 c
 c     This routine writes a file with the super redistribution function (SRF) for Compton
 c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
@@ -26,15 +26,13 @@ c         wp: Array (nmaxp) of energies in eV
 c         df: Array (nmaxp) of delta energies in eV
 c         skn: Array (nmaxp) of Kein-Nishina cross sections
 c         mgi: Total number of angles 
+c         smit: Array (mgi) Legendre ordinates (angles)
+c         agt: Array (mgi) weights
 c         limit: Fractional limit below which the SRF is set to 0
 c
 c     Output arguments: 
 c         None
 c
-c     Important variables:
-c         smit: Array (mgi) Legendre ordinates (angles)
-c         agt: Array (mgi) weights
-c         
 c     Requires:
 c         probab.f: Routine for the RF calculation
 c
@@ -57,12 +55,9 @@ c     Check1 is to ensure photon number is conserved in scatterings
       call set_filename('table.fits') !name of the fits file
       n = 1 ! column number of the fits file
 
-c     Get the Gaussian quadratures for angular integration
-      call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
-
 c     Set up a new fits file
       call setup_new_file(nmaxp, itrans, mgi,
-     &                    wp, temps, smit,  ! smit not actually used here
+     &                    wp, temps, smit, agt,
      &                    skn, limit, .TRUE., 0) !create the fits file
 
 

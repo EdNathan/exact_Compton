@@ -68,13 +68,13 @@ c-----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
          subroutine setup_new_file(en_dim, temp_dim, mgi,
-     &                             en, temp, mu,
-     &                             skn, limit, avangle, knsamps)
+     &                             en, temp, smit, agt,
+     &                             skn, limit, avangle, nksamps)
             implicit none
 c           Input
-            integer en_dim, temp_dim, mgi, knsamps
+            integer en_dim, temp_dim, mgi, nksamps
             double precision en(en_dim), temp(temp_dim)
-            double precision mu(mgi) !, dmu(mgi)
+            double precision smit(mgi), agt(mgi)
             double precision skn(en_dim, temp_dim)
             double precision limit
             logical avangle
@@ -102,7 +102,7 @@ c           Internal variables
                file_mgi = mgi
             endif
 
-            coldim = 3 ! MAX(4, file_mgi)
+            coldim = 4 ! MAX(4, file_mgi)
 
 c           If file already exists, delete it!
             call deletefile()
@@ -140,7 +140,7 @@ c           Add new table, move to it
             if ( avangle ) then
               tfields  = 2
             else
-              tfields  = 3
+              tfields  = 4
             endif
             nrows    = 1
             extname  = 'Parameters'
@@ -151,7 +151,7 @@ c           - Column names
             ttype(1) = 'TEMP'
             ttype(2) = 'ENERGIES'
             ttype(3) = 'MU'
-            
+            ttype(4) = 'WEIGHTS'
 c           - Column data formats 
             write(tform(1), '(I15,A1)') temp_dim, 'D'
             tform(1) = trim(tform(1))
@@ -159,11 +159,13 @@ c           - Column data formats
             tform(2) = trim(tform(2))
             write(tform(3), '(I15,A1)') mgi, 'D'
             tform(3) = trim(tform(3))
-
+            write(tform(4), '(I15,A1)') mgi, 'D'
+            tform(4) = trim(tform(4))
 c           - Column units
             tunit(1) = 'K'! 'kT/mec2'
             tunit(2) = 'eV'
             tunit(3) = ''
+            tunit(4) = ''
 
             call ftphbn(unit, nrows, tfields, 
      &            ttype(1:tfields), tform(1:tfields), tunit(1:tfields),
@@ -179,7 +181,7 @@ c           Write useful headers
      &             "Number of angles used", 
      &              status)
             if(.not.AVANGLE)then
-               call ftpkyj(unit, 'AZIMUTHAL', knsamps, 
+               call ftpkyj(unit, 'AZIMUTHAL', nksamps, 
      &               "Number of points used in azimuthal integration", 
      &               status)
             endif
@@ -199,7 +201,9 @@ c           Insert data
             call ftpcld(unit, colnum, rownum, 1, en_dim, en, status)
             if ( .not. avangle ) then
                colnum = 3
-               call ftpcld(unit, colnum, rownum, 1, mgi, mu, status)
+               call ftpcld(unit, colnum, rownum, 1, mgi, smit, status)
+               colnum = 4
+               call ftpcld(unit, colnum, rownum, 1, mgi, agt, status)
             endif
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccc

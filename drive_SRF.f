@@ -43,6 +43,7 @@ c........
       double precision pemin, pemax, pemax2
       double precision, allocatable :: theta(:), temps(:), wp(:), df(:)
       double precision, allocatable ::  skn(:,:)
+      double precision, allocatable ::  smit(:), agt(:)
       double precision tini, tfin, tcpu, temp
       double precision limit
 
@@ -97,6 +98,9 @@ c         Read possible parameters
 c     Allocate arrays
       allocate ( theta(itrans), temps(nmaxp), wp(nmaxp), df(nmaxp) )
       allocate ( skn(nmaxp,itrans) )
+      allocate ( smit(mgi), agt(mgi) )
+
+
 
 C     This line is only ran if the compiler can handle parallisation
 !$    write(*,*)"Parallised over ",OMP_get_max_threads()
@@ -123,16 +127,18 @@ c     Photon energy grid
 c
 c     Calculate the Compton Cross Section
       call scattxs(nmaxp, wp, itrans, theta, skn)
-
+c
+c     Get the Gaussian quadratures for angular integration
+      call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
 c     Produce file with all SRF's
       if (avangle) then
             call super_Compton_RF_fits(itrans, temps, theta, 
      &                                 nmaxp, wp, df, skn, mgi,
-     &                                 limit)
+     &                                 smit, agt, limit)
       else
             call super_Compton_RF_fits_angle(itrans, temps, theta, 
      &                                       nmaxp, wp,df, skn, mgi,
-     &                                       knsamps, limit)
+     &                                       smit, agt, knsamps, limit)
       endif
 c     Get current time
       call cpu_time(tfin)
