@@ -68,13 +68,13 @@ c-----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
          subroutine setup_new_file(en_dim, temp_dim, mgi,
-     &                             en, temp, smit, agt,
-     &                             skn, limit, avangle )
+     &                             en, temp, mu,
+     &                             skn, limit, avangle, knsamps)
             implicit none
 c           Input
-            integer en_dim, temp_dim, mgi
+            integer en_dim, temp_dim, mgi, knsamps
             double precision en(en_dim), temp(temp_dim)
-            double precision smit(mgi), agt(mgi)
+            double precision mu(mgi) !, dmu(mgi)
             double precision skn(en_dim, temp_dim)
             double precision limit
             logical avangle
@@ -102,7 +102,7 @@ c           Internal variables
                file_mgi = mgi
             endif
 
-            coldim = MAX(4, file_mgi)
+            coldim = 3 ! MAX(4, file_mgi)
 
 c           If file already exists, delete it!
             call deletefile()
@@ -140,7 +140,7 @@ c           Add new table, move to it
             if ( avangle ) then
               tfields  = 2
             else
-              tfields  = 4
+              tfields  = 3
             endif
             nrows    = 1
             extname  = 'Parameters'
@@ -150,8 +150,8 @@ c           Write header
 c           - Column names
             ttype(1) = 'TEMP'
             ttype(2) = 'ENERGIES'
-            ttype(3) = 'cos_ANGLES'
-            ttype(4) = 'WEIGHTS'
+            ttype(3) = 'MU'
+            
 c           - Column data formats 
             write(tform(1), '(I15,A1)') temp_dim, 'D'
             tform(1) = trim(tform(1))
@@ -159,13 +159,11 @@ c           - Column data formats
             tform(2) = trim(tform(2))
             write(tform(3), '(I15,A1)') mgi, 'D'
             tform(3) = trim(tform(3))
-            write(tform(4), '(I15,A1)') mgi, 'D'
-            tform(4) = trim(tform(4))
+
 c           - Column units
             tunit(1) = 'K'! 'kT/mec2'
             tunit(2) = 'eV'
             tunit(3) = ''
-            tunit(4) = ''
 
             call ftphbn(unit, nrows, tfields, 
      &            ttype(1:tfields), tform(1:tfields), tunit(1:tfields),
@@ -180,6 +178,11 @@ c           Write useful headers
             call ftpkyj(unit, 'ANGLES', mgi, 
      &             "Number of angles used", 
      &              status)
+            if(.not.AVANGLE)then
+               call ftpkyj(unit, 'AZIMUTHAL', knsamps, 
+     &               "Number of points used in azimuthal integration", 
+     &               status)
+            endif
             call ftpkyl(unit, 'AVANGLE', avangle, 
      &             "Whether the SRF has been integrated over angles", 
      &              status)
@@ -196,13 +199,11 @@ c           Insert data
             call ftpcld(unit, colnum, rownum, 1, en_dim, en, status)
             if ( .not. avangle ) then
                colnum = 3
-               call ftpcld(unit, colnum, rownum, 1, mgi, smit, status)
-               colnum = 4
-               call ftpcld(unit, colnum, rownum, 1, mgi, agt, status)
+               call ftpcld(unit, colnum, rownum, 1, mgi, mu, status)
             endif
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c           Second table / 3rd extension - Parameters
+c           Second table / 3rd extension - Cross section
 
 c           Add new table, move to it      
             call ftcrhd(unit,status)
@@ -230,7 +231,7 @@ c           Insert data
             colnum = 1
             call ftpcld(unit, colnum, rownum, 1, 
      &                  (en_dim * temp_dim), skn, status)
-
+            
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c           Third table  / 4th extension - SRF pointers   
 
@@ -238,7 +239,7 @@ c           Add new table, move to it
             call ftcrhd(unit,status)
             
             tfields  = 2
-            nrows    = file_mgi
+            nrows    = 1
             extname  = 'iSRF_pointers'
             varidat  = 0
          
@@ -247,7 +248,7 @@ c           - Column names
             ttype(1) = 'IND'
             ttype(2) = 'LEN'
 c           - Column data formats      
-            write(tform(1), '(I15,A1)') (en_dim * temp_dim), 'I'  
+            write(tform(1),'(I15,A1)') (en_dim*temp_dim*file_mgi),'I'  
             tform(1:2) = trim(tform(1))
 c           - Column units
             tunit(1:2) = ''   
@@ -255,33 +256,33 @@ c           - Column units
             call ftphbn(unit, nrows, tfields, 
      &            ttype(1:tfields), tform(1:tfields), tunit(1:tfields),
      &            extname, varidat, status )
-
+            
 c           Not inserting data yet
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c           Fourth table / 5th extension - SRF
 
 c           Add new table, move to it      
             call ftcrhd(unit,status)
-            tfields  = file_mgi
-            nrows    = en_dim * temp_dim
+            tfields  = 1
+            nrows    = file_mgi*en_dim * temp_dim
             extname  = 'iSRF'
             varidat  = 0
 c           Write header 
-            do i=1,file_mgi
-c              - Column names
-               write( ttype(i), '(A4,I12.12)'  ) 'SRF_', i
-c              - Column data type
-               tform(i) = '1PD'
-c              - Column unit
-               tunit(i) = ''                        
-            enddo   
+            
+c           - Column name
+            ttype(1) = 'SRF'
+c           - Column data type
+            tform(1) = '1PD'
+c           - Column unit
+            tunit(1) = ''                        
+               
             call ftphbn(unit, nrows, tfields, 
      &            ttype(1:tfields), tform(1:tfields), tunit(1:tfields),
      &            extname, varidat, status )
             
 c           Not inserting data yet
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
+            
 c           Deallocate arrays
             DEALLOCATE( ttype, tform, tunit )
 
@@ -298,8 +299,8 @@ c-----------------------------------------------------------------------
             integer hdutype, i
             integer rownum, colnum
             integer writeLen
-            integer SRF_ind(file_mgi, file_en_dim*file_temp_dim)
-            integer SRF_len(file_mgi, file_en_dim*file_temp_dim)
+            integer SRF_ind(file_mgi*file_en_dim*file_temp_dim)
+            integer SRF_len(file_mgi*file_en_dim*file_temp_dim)
 
 c           If file isn't open, then don't proceed
             if(unit .LE. 0)then
@@ -310,20 +311,20 @@ c           Move to the fourth tab, if that's not current
             
             writeLen = file_en_dim * file_temp_dim
 
-            do i=1, file_mgi
-               rownum = i
-               colnum = 1
+            
+            rownum = 1
+            colnum = 1
 c              Write with option "j" instead of "i" as we are using
 c              regular integers, not short.  Perhaps we can swap to
 c              short integers save memory, but it isn't significant
 c              with the current values expected.
-               call ftpclj(unit, colnum, rownum, 1, writeLen, 
-     &                     SRF_ind(i,:), status)
-               
-               colnum = 2
-               call ftpclj(unit, colnum, rownum, 1, writeLen,
-     &                     SRF_len(i,:), status)
-            enddo
+            call ftpclj(unit, colnum, rownum, 1, writeLen, 
+     &                  SRF_ind, status)
+            
+            colnum = 2
+            call ftpclj(unit, colnum, rownum, 1, writeLen,
+     &                  SRF_len, status)
+      
 
             call print_any_errors()
          end subroutine write_SRF_pointers
@@ -336,8 +337,8 @@ c-----------------------------------------------------------------------
             implicit none
             integer hdutype, endind, i
             integer rownum, colnum
-            integer ind(file_mgi), num(file_mgi)
-            double precision SRF(file_mgi, file_en_dim)
+            integer ind, num
+            double precision SRF(file_mgi*file_en_dim)
        
 c           If file isn't open, then don't proceed
             if(unit .LE. 0)then
@@ -346,13 +347,11 @@ c           If file isn't open, then don't proceed
 c           Move to the fifth tab, if that's not current
             call ensure_tab(5)
 
-c           Write each angle's iSRF to a new column 
-            do i=1, file_mgi
-               colnum = i
-               endind = ind(i) + num(i)
-               call ftpcld(unit, colnum, rownum, 1, num(i), 
-     &                     SRF(i,ind(i):endind), status)
-            enddo
+c           Write the iSRF 
+            colnum = 1
+            endind = ind + num
+            call ftpcld(unit, colnum, rownum, 1, num, 
+     &                  SRF(ind:endind), status)
             call print_any_errors()
          end subroutine write_SRFs
 c-----------------------------------------------------------------------

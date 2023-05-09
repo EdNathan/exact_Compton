@@ -31,7 +31,7 @@ c
 c........    
       use omp_lib
       implicit none
-      integer nmaxp, itrans, mgi
+      integer nmaxp, itrans, mgi, knsamps
       ! parameter (nmaxp=500, itrans=70, mgi=8)
       logical avangle
       ! parameter (avangle=.false.)
@@ -43,7 +43,6 @@ c........
       double precision pemin, pemax, pemax2
       double precision, allocatable :: theta(:), temps(:), wp(:), df(:)
       double precision, allocatable ::  skn(:,:)
-      double precision, allocatable ::  smit(:), agt(:)
       double precision tini, tfin, tcpu, temp
       double precision limit
 
@@ -52,6 +51,7 @@ c     Default values
       nmaxp = 500
       itrans = 70
       mgi = 3000
+      knsamps = 0
       avangle = .true.
 
 c     Handle parameter file
@@ -73,8 +73,8 @@ c         Read possible parameters
             read( file_line(7:), *, iostat=convert_stat) itrans
           elseif (file_line(:3) .eq. 'mgi') then
             read( file_line(4:), *, iostat=convert_stat) mgi
-          elseif (file_line(:7) .eq. 'avangle') then
-            read( file_line(8:), *, iostat=convert_stat) avangle
+          elseif (file_line(:7) .eq. 'knsamps') then
+            read( file_line(8:), *, iostat=convert_stat) knsamps
           elseif (file_line(:5) .eq. 'limit') then
             read( file_line(6:), *, iostat=convert_stat) limit
           endif
@@ -85,18 +85,18 @@ c         Read possible parameters
         close(file_unit)
       endif
 
+      avangle = (knsamps .le. 0)
+
       write(*,*)'Using nmaxp:   ', nmaxp
       write(*,*)'Using itrans:  ', itrans
       write(*,*)'Using mgi:     ', mgi
+      write(*,*)'Using knsamps: ', knsamps
       write(*,*)'Using avangle: ', avangle
       write(*,*)'Using limit:   ', limit
 
 c     Allocate arrays
       allocate ( theta(itrans), temps(nmaxp), wp(nmaxp), df(nmaxp) )
       allocate ( skn(nmaxp,itrans) )
-      allocate ( smit(mgi), agt(mgi) )
-
-
 
 C     This line is only ran if the compiler can handle parallisation
 !$    write(*,*)"Parallised over ",OMP_get_max_threads()
@@ -123,18 +123,16 @@ c     Photon energy grid
 c
 c     Calculate the Compton Cross Section
       call scattxs(nmaxp, wp, itrans, theta, skn)
-c
-c     Get the Gaussian quadratures for angular integration
-      call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
+
 c     Produce file with all SRF's
       if (avangle) then
             call super_Compton_RF_fits(itrans, temps, theta, 
      &                                 nmaxp, wp, df, skn, mgi,
-     &                                 smit, agt, limit)
+     &                                 limit)
       else
             call super_Compton_RF_fits_angle(itrans, temps, theta, 
      &                                       nmaxp, wp,df, skn, mgi,
-     &                                       smit, agt, limit)
+     &                                       knsamps, limit)
       endif
 c     Get current time
       call cpu_time(tfin)

@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------------------------------
       subroutine super_Compton_RF_fits(itrans, temps, theta, 
      &                                 nmaxp, wp, df, skn, mgi, 
-     &                                 smit, agt, limit)
+     &                                 limit)
 c
 c     This routine writes a file with the super redistribution function (SRF) for Compton
 c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
@@ -19,17 +19,21 @@ c     Only significant values of the SRF are actually written, i.e., when RF > l
 c
 c     Input arguments:
 c         itrans: Total number of temperatures
+c         temps: Array (itrans) of temperatures in Kelvin
 c         theta: Array (itrans) of temperatures in kT/mec2
 c         nmaxp: Total number of energy points
 c         wp: Array (nmaxp) of energies in eV
 c         df: Array (nmaxp) of delta energies in eV
 c         skn: Array (nmaxp) of Kein-Nishina cross sections
 c         mgi: Total number of angles 
-c         smit: Array (mgi) Legendre ordinates (angles)
-c         agt: Array (mgi) weights 
+c         limit: Fractional limit below which the SRF is set to 0
 c
 c     Output arguments: 
 c         None
+c
+c     Important variables:
+c         smit: Array (mgi) Legendre ordinates (angles)
+c         agt: Array (mgi) weights
 c         
 c     Requires:
 c         probab.f: Routine for the RF calculation
@@ -41,26 +45,28 @@ c
       integer itrans, nmaxp, mgi, iz, np, jj
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
       real*8 smit(mgi), agt(mgi)
-      real*8 check1(nmaxp)
-      real*8 prob(1,nmaxp,nmaxp)
+      real*8 check
+      real*8 prob(nmaxp,nmaxp)
       real*8 ecen, temps(itrans)
       real*8 limit
       integer :: n, curr_ind_s, curr_ind_e
-      integer fSInd(1, nmaxp*itrans), fLen(1, nmaxp*itrans)
+      integer fSInd(nmaxp*itrans), fLen(nmaxp*itrans)
 
 c     Check1 is to ensure photon number is conserved in scatterings
 
       call set_filename('table.fits') !name of the fits file
       n = 1 ! column number of the fits file
 
+c     Get the Gaussian quadratures for angular integration
+      call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
+
 c     Set up a new fits file
       call setup_new_file(nmaxp, itrans, mgi,
-     &                    wp, temps, smit, agt,
-     &                    skn, limit, .TRUE.) !create the fits file
+     &                    wp, temps, smit,  ! smit not actually used here
+     &                    skn, limit, .TRUE., 0) !create the fits file
 
 
       do iz = 1, itrans
-         check1 = 0.d0
          prob = 0.d0
 
 c         temp = theta(iz)*ikbol*mec2          ! temperature in K
@@ -73,7 +79,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
 !$omp do
             do jj=1,nmaxp
                call probab(theta(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
-     &          ,agt,prob(1, jj,np))
+     &          ,agt,prob(jj,np))
             enddo
 !$omp end do
 !$omp end parallel
@@ -84,18 +90,24 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
          curr_ind_s = (iz-1)*nmaxp
          curr_ind_e = iz*nmaxp
          
-         call srf_nonlimit( prob(1, :,:), df, nmaxp, limit, 
-     &                      fSInd(1,curr_ind_s+1 : curr_ind_e), 
-     &                      fLen(1,curr_ind_s+1 : curr_ind_e), 
-     &                      check1 )
+         call srf_nonlimit( prob(:,:), nmaxp, limit, 
+     &                      fSInd(curr_ind_s+1 : curr_ind_e), 
+     &                      fLen(curr_ind_s+1 : curr_ind_e) )
          
-
+         do np=1,nmaxp
+            check = 0.0
+            do jj=fSInd(curr_ind_s+np),  
+     1               (fSInd(curr_ind_s+np)+fLen(curr_ind_s+np)-1)
+               check = check + df(jj) * prob(jj, np)
+            enddo
+            prob(:,np) = prob(:,np) *skn(np,iz)*df(np)/wp(np)/check
+         enddo
          
 c     Write the iSRF of this temperature to the fits file
          do jj = 1, nmaxp
-            call write_SRFs(n, prob(1, jj,:), 
-     &                      fSInd(:,curr_ind_s+jj), 
-     &                      fLen(:, curr_ind_s+jj) )
+            call write_SRFs(n, prob(jj,:), 
+     &                      fSInd(curr_ind_s+jj), 
+     &                      fLen(curr_ind_s+jj) )
             n = n + 1  
          enddo
          print *,iz

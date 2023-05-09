@@ -18,6 +18,15 @@ convolution of a given spectrum to account for the Compton scattering at the
 given temperature.  Only significant values of the SRF are actually written,
 i.e., when RF > limit.
 
+When angles are introducted, the code calculates
+
+         SRF(T,uf,ui) = IRF(uf,ui)/N(ui)*skn(Ei)*dEi/Ei
+
+where ui = (Ei, MUi) represents an initial energy-angle pairing, and likewise
+uf = (Ef, MUf) represents a final energy-angle pairing.  As the RF is dependent
+on scatting angle only, it is integrated over knsamps number of azimuthal angle
+points.
+
 The output of this code is used by the XILLVER model.
 
 ## Input file structure
@@ -26,7 +35,7 @@ Five parameters can be read in by the program by creating the file <I>drive_para
 * itrans (number of temperatures in the grid)
 * mgi (number of angles to evaluate at)
 * limit (the fractional limit of the maximum value of the SRF, below which it's assumed to be 0.)
-* avangle (whether to return the averaged/integrated SRF over angles)
+* knsamps (the number of azimuthal points to integrate the SRF over.  if set to 0, the angluar averaged SRF is returned.)
 
 The file should be formatted as so (these are the default parameters within the code)
 
@@ -35,7 +44,7 @@ The file should be formatted as so (these are the default parameters within the 
       itrans 70
       mgi 3000
       limit 0.001
-      avangle true
+      knsamps 0
 ## Output file structure
 The fits file produced contains five HDUs.  It will be called <I>angles.fits</I> for the angular resolved code, else <I>table.fits</I> for the angular integrated code.
 ### 1.  Primary HDU
@@ -44,22 +53,22 @@ This doesn't contain any infomation, and exists simply for the datastructure of 
 This contains two or four columns, and one row.  The last two columns only exist when the code produces an angular resolved SRF.
 1. TEMP (K) - array of temperature points used.
 2. ENERGIES (eV) - array energy points used.
-3. cos_ANGLES - The cosine of the angle of the Guassian quadratures used.
-4. WEIGHTS - The weighting that needs to be applied to the SRF at each angle.
+3. MU - The cos(angle) gridpoints used 
 
 ### 3.  KN_cross
 One column, with one row.  This contains the Klein–Nishina cross-section for every photon energy and electron temperature.
 
 Each element in the array corresponds to a temperature/energy grid pair.  For N energy points, and T temperature points, the first N elements correspond to the first temperature grid point; the elements (N+1)...(2N) correspond to the second temperature point, and so on.
 ### 4.  SRF_Pointers
-This contains two columns, with a row for each angle (only one row for the case of an angular integrated SRF)
-1. IND - the starting indices of the energy array which the first value of the saved iSRF array corresponds to.
+This contains two columns, each being one row.
+1. IND - the starting indices of the energy/angle array which the first value of the saved iSRF array corresponds to.
 Each element here is an array, containing values for each row of the iSRF.
 2. LEN - the length of the saved iSRF array. Each element here is an array, containing values for each row of the iSRF.
 ### 5.  iSRF
-This contains one column per angle (with only one column for the angular integrated SRF).  Each row corresponds to a final energy & temperature pair, in a similar way as the elements of the KN cross-section (table 3.)
+Each row corresponds to a final energy & angle & temperature pair, in an analogous way as the elements of the KN cross-section (table 3).  The fastest changing value is the angle, followed by energy, followed by temperature.
 
-Each element in each column is a variable length array, having trimmed out all the elements below the cut-off limit.  Use the IND and LEN columns from table 4 to reconstruct the full iSRF.
+Each element in each column is a variable length array, having trimmed out all the elements below the cut-off limit.  Each element in this array also corresponds to (energy, angle) pairs, with the angle varying first.
+Use the IND and LEN columns from table 4 to reconstruct the full iSRF.
 ## Code info
      Version: 0.5.0 - Tue Feb 28th 14:35:00 PDT 2023
 
