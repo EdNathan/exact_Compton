@@ -57,7 +57,7 @@ c     Check1 is to ensure photon number is conserved in scatterings
 
 c     Set up a new fits file
       call setup_new_file(nmaxp, itrans, mgi,
-     &                    wp, temps, smit, agt,
+     &                    wp, df, temps, smit, agt,
      &                    skn, limit, .TRUE., 0) !create the fits file
 
 
@@ -100,7 +100,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
          
 c     Write the iSRF of this temperature to the fits file
          do jj = 1, nmaxp
-            call write_SRFs(n, prob(jj,:), 
+            call write_SRFs(n, 1, prob(jj,:), 
      &                      fSInd(curr_ind_s+jj), 
      &                      fLen(curr_ind_s+jj) )
             n = n + 1  
@@ -109,7 +109,7 @@ c     Write the iSRF of this temperature to the fits file
       enddo   
  
 
-      call write_SRF_pointers(fSInd, fLen)
+      call write_SRF_pointers(1, fSInd, fLen)
 
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()

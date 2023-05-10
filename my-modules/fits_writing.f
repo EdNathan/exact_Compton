@@ -68,12 +68,12 @@ c-----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
          subroutine setup_new_file(en_dim, temp_dim, mgi,
-     &                             en, temp, smit, agt,
+     &                             en, den, temp, smit, agt,
      &                             skn, limit, avangle, nksamps)
             implicit none
 c           Input
             integer en_dim, temp_dim, mgi, nksamps
-            double precision en(en_dim), temp(temp_dim)
+            double precision en(en_dim), den(en_dim), temp(temp_dim)
             double precision smit(mgi), agt(mgi)
             double precision skn(en_dim, temp_dim)
             double precision limit
@@ -102,7 +102,7 @@ c           Internal variables
                file_mgi = mgi
             endif
 
-            coldim = 4 ! MAX(4, file_mgi)
+            coldim = 5 ! MAX(5, file_mgi)
 
 c           If file already exists, delete it!
             call deletefile()
@@ -138,9 +138,9 @@ c           First table / 2nd extension - Parameters
 c           Add new table, move to it      
             call ftcrhd(unit,status)
             if ( avangle ) then
-              tfields  = 2
+              tfields  = 3
             else
-              tfields  = 4
+              tfields  = 5
             endif
             nrows    = 1
             extname  = 'Parameters'
@@ -150,22 +150,26 @@ c           Write header
 c           - Column names
             ttype(1) = 'TEMP'
             ttype(2) = 'ENERGIES'
-            ttype(3) = 'MU'
-            ttype(4) = 'WEIGHTS'
+            ttype(3) = 'del ENERGY'
+            ttype(4) = 'MU'
+            ttype(5) = 'WEIGHTS'
 c           - Column data formats 
             write(tform(1), '(I15,A1)') temp_dim, 'D'
             tform(1) = trim(tform(1))
             write(tform(2), '(I15,A1)') en_dim, 'D'
             tform(2) = trim(tform(2))
-            write(tform(3), '(I15,A1)') mgi, 'D'
+            write(tform(3), '(I15,A1)') en_dim, 'D'
             tform(3) = trim(tform(3))
             write(tform(4), '(I15,A1)') mgi, 'D'
             tform(4) = trim(tform(4))
+            write(tform(5), '(I15,A1)') mgi, 'D'
+            tform(5) = trim(tform(5))
 c           - Column units
             tunit(1) = 'K'! 'kT/mec2'
             tunit(2) = 'eV'
-            tunit(3) = ''
+            tunit(3) = 'eV'
             tunit(4) = ''
+            tunit(5) = ''
 
             call ftphbn(unit, nrows, tfields, 
      &            ttype(1:tfields), tform(1:tfields), tunit(1:tfields),
@@ -199,10 +203,12 @@ c           Insert data
      &                  status)
             colnum = 2
             call ftpcld(unit, colnum, rownum, 1, en_dim, en, status)
+            colnum=3
+            call ftpcld(unit, colnum, rownum, 1, en_dim, den, status)
             if ( .not. avangle ) then
-               colnum = 3
-               call ftpcld(unit, colnum, rownum, 1, mgi, smit, status)
                colnum = 4
+               call ftpcld(unit, colnum, rownum, 1, mgi, smit, status)
+               colnum = 5
                call ftpcld(unit, colnum, rownum, 1, mgi, agt, status)
             endif
 
@@ -243,7 +249,11 @@ c           Add new table, move to it
             call ftcrhd(unit,status)
             
             tfields  = 2
-            nrows    = 1
+            if(avangle)then
+               nrows    = 1
+            else
+               nrows    = 2
+            endif
             extname  = 'iSRF_pointers'
             varidat  = 0
          
@@ -267,18 +277,27 @@ c           Fourth table / 5th extension - SRF
 
 c           Add new table, move to it      
             call ftcrhd(unit,status)
-            tfields  = 1
+            if (avangle)then
+               tfields  = 1
+            else
+               tfields = 2
+            endif
             nrows    = file_mgi*en_dim * temp_dim
             extname  = 'iSRF'
             varidat  = 0
 c           Write header 
-            
-c           - Column name
-            ttype(1) = 'SRF'
+
+c           - Column name           
+            if (avangle)then
+               ttype(1) = 'SRF'
+            else
+               ttype(1) = 'SRFe'
+               ttype(2) = 'SRFo' 
+            endif
 c           - Column data type
-            tform(1) = '1PD'
+            tform(1:tfields) = '1PD'
 c           - Column unit
-            tunit(1) = ''                        
+            tunit(1:tfields) = ''                        
                
             call ftphbn(unit, nrows, tfields, 
      &            ttype(1:tfields), tform(1:tfields), tunit(1:tfields),
@@ -298,7 +317,7 @@ c-----------------------------------------------------------------------
 
 
 c-----------------------------------------------------------------------
-         subroutine write_SRF_pointers(SRF_ind, SRF_len)
+         subroutine write_SRF_pointers(rownum, SRF_ind, SRF_len)
             implicit none
             integer hdutype, i
             integer rownum, colnum
@@ -315,8 +334,6 @@ c           Move to the fourth tab, if that's not current
             
             writeLen = file_en_dim * file_temp_dim
 
-            
-            rownum = 1
             colnum = 1
 c              Write with option "j" instead of "i" as we are using
 c              regular integers, not short.  Perhaps we can swap to
@@ -337,7 +354,7 @@ c-----------------------------------------------------------------------
 
 
 c-----------------------------------------------------------------------
-         subroutine write_SRFs(rownum, SRF, ind, num)
+         subroutine write_SRFs(rownum, colnum, SRF, ind, num)
             implicit none
             integer hdutype, endind, i
             integer rownum, colnum
@@ -351,8 +368,7 @@ c           If file isn't open, then don't proceed
 c           Move to the fifth tab, if that's not current
             call ensure_tab(5)
 
-c           Write the iSRF 
-            colnum = 1
+c           Write the iSRF
             endind = ind + num
             call ftpcld(unit, colnum, rownum, 1, num, 
      &                  SRF(ind:endind), status)

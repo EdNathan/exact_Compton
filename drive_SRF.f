@@ -98,9 +98,7 @@ c         Read possible parameters
 c     Allocate arrays
       allocate ( theta(itrans), temps(nmaxp), wp(nmaxp), df(nmaxp) )
       allocate ( skn(nmaxp,itrans) )
-      allocate ( smit(mgi), agt(mgi) )
-
-
+      
 
 C     This line is only ran if the compiler can handle parallisation
 !$    write(*,*)"Parallised over ",OMP_get_max_threads()
@@ -128,17 +126,24 @@ c
 c     Calculate the Compton Cross Section
       call scattxs(nmaxp, wp, itrans, theta, skn)
 c
-c     Get the Gaussian quadratures for angular integration
-      call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
+
 c     Produce file with all SRF's
       if (avangle) then
+            allocate ( smit(mgi), agt(mgi) )
+c           Get the Gaussian quadratures for angular integration
+            call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
             call super_Compton_RF_fits(itrans, temps, theta, 
-     &                                 nmaxp, wp, df, skn, mgi,
-     &                                 smit, agt, limit)
+     1                                 nmaxp, wp, df, skn, mgi,
+     2                                 smit, agt, limit)
       else
+c           We only need postive angles
+            allocate ( smit(2*mgi), agt(2*mgi) )
+            call gaulegf(-1.d0, 1.d0, smit, agt, 2*mgi)
             call super_Compton_RF_fits_angle(itrans, temps, theta, 
-     &                                       nmaxp, wp,df, skn, mgi,
-     &                                       smit, agt, knsamps, limit)
+     1                                       nmaxp, wp,df, skn, mgi,
+     2                                       smit(mgi + 1: 2*mgi), 
+     3                                       agt(mgi + 1: 2*mgi),
+     4                                       knsamps, limit)
       endif
 c     Get current time
       call cpu_time(tfin)
