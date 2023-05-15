@@ -332,7 +332,7 @@ c           If file isn't open, then don't proceed
 c           Move to the fourth tab, if that's not current
             call ensure_tab(4)
             
-            writeLen = file_en_dim * file_temp_dim
+            writeLen = file_mgi * file_en_dim * file_temp_dim
 
             colnum = 1
 c              Write with option "j" instead of "i" as we are using
