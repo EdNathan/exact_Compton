@@ -169,10 +169,11 @@ c        srf( init_ang, init_en, final_ang, final_en  )
                   do jj=1,nmaxp ! final energy
                      check = check  
      1                 + df(jj) * srfe(inang,np,outang,jj) * agt(outang)
+     2                          * smit(outang)
                   enddo
                enddo
                write(80,*)check
-               factor = skn(np,iz)*df(np)/wp(np)/check
+               factor = skn(np,iz)*df(np)/wp(np)/check/smit(inang)
                srfe(inang,np,:,:)=srfe(inang,np,:,:) * factor
                srfo(inang,np,:,:)=srfo(inang,np,:,:) * factor
             enddo
