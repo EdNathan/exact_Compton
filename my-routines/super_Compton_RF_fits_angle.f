@@ -6,7 +6,7 @@ c     This routine writes a file with the super redistribution function (SRF) fo
 c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
 c     defined for a set of initial photon energies Ei as:
 c
-c         SRF(T,f,i) = IRF(f,i)/N(i)*skn(Ei)*dEi/Ei
+c         SRF(T,f,i) = IRF(f,i)/N(i)*skn(Ei)*dmui*dEi/Ei
 c
 c     where IRF(f,i) is in fact the inverse redistribution function for the Compton scattering
 c     of a photon from initial energy Ei and initial angle mui, to final energy Ef and  
@@ -168,12 +168,11 @@ c        srf( init_ang, init_en, final_ang, final_en  )
                do outang=1,mgi ! final angle
                   do jj=1,nmaxp ! final energy
                      check = check  
-     1                 + df(jj) * srfe(inang,np,outang,jj) * agt(outang)
-     2                          * smit(outang)
+     1                  + srfe(inang,np,outang,jj)*agt(outang)*df(jj)
                   enddo
                enddo
-               write(80,*)check
-               factor = skn(np,iz)*df(np)/wp(np)/check/smit(inang)
+               check = check / 2
+               factor = skn(np,iz)*df(np)*agt(inang)/wp(np)/check
                srfe(inang,np,:,:)=srfe(inang,np,:,:) * factor
                srfo(inang,np,:,:)=srfo(inang,np,:,:) * factor
             enddo
