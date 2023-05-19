@@ -171,7 +171,6 @@ c        srf( init_ang, init_en, final_ang, final_en  )
      1                  + srfe(inang,np,outang,jj)*agt(outang)*df(jj)
                   enddo
                enddo
-               check = check / 2
                factor = skn(np,iz)*df(np)*agt(inang)/wp(np)/check
                srfe(inang,np,:,:)=srfe(inang,np,:,:) * factor
                srfo(inang,np,:,:)=srfo(inang,np,:,:) * factor
