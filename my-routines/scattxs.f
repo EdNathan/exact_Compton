@@ -30,7 +30,7 @@ c
      2                     8.d0*ixloc - 0.5d0/((1.d0+xloc)**2.0))*ixloc
                endif
             else 
-               call crsexact(theta(iz), wp(np)/511.d3, skn(np,iz))
+               call crsexact(theta(iz), wp(np)/mec2, skn(np,iz))
             endif
          enddo
 !$omp end do
