@@ -50,7 +50,7 @@ c
       real*8 check, factor
       real*8 profil, temps(itrans)
       real*8 limit
-      real*8 srfval
+      real*8 srfval, kord
       real*8, target :: srfe(mgi,nmaxp,mgi,nmaxp), 
      &                  srfo(mgi,nmaxp,mgi,nmaxp)
       real*8, pointer :: flatsrfe(:,:), flatsrfo(:,:)
@@ -105,13 +105,13 @@ c        srf( init_ang, init_en, final_ang, final_en  )
 c                      Do azimuthal integration
                         srfval = 0.0
                         do qq=1,nksmps
+                           kord = A*kords(qq)+B
                            srfval = srfval 
      1                        + profil(1,wp(np)/mec2,wp(jj)/mec2, 
-     2                                 A*kords(qq)+B,x)
+     2                                 kord,x)
      3                        / sqrt(1 - kords(qq)**2)
      4                        * kweights(qq)
                         enddo ! qq
-                        srfval = srfval / pi
                         srfe(inang,np,outang,jj) = 
      1                     srfe(inang,np,outang,jj) + srfval
                         srfo(inang,np,outang,jj) = 
@@ -135,17 +135,17 @@ c                    Symmetry:
             enddo
          enddo
 
-
+        
 c        srf( init_ang, init_en, final_ang, final_en  )
 c        flatsrf( init_pair, final_pair)
          call srf_nonlimit( flatsrfe(:,:), nmaxp*mgi, limit, 
      &                      flatfse(:,iz), 
      &                      flatfle(:,iz)) 
-
+c
          call srf_nonlimit( flatsrfo(:,:), nmaxp*mgi, limit, 
      &                      flatfso(:,iz), 
      &                      flatflo(:,iz)) 
-
+         
 
 c        Go through each 'final' energy/angle row, and set the areas to 0 when below limit
          do jj=1, nmaxp*mgi
@@ -171,14 +171,23 @@ c        srf( init_ang, init_en, final_ang, final_en  )
      1                  + srfe(inang,np,outang,jj)*agt(outang)*df(jj)
                   enddo
                enddo
-               factor = skn(np,iz)*df(np)*agt(inang)/wp(np)/check
+               write(*,*) check
+               factor = skn(np,iz)*df(np)*agt(inang)/wp(np)/(2*check)
                srfe(inang,np,:,:)=srfe(inang,np,:,:) * factor
                srfo(inang,np,:,:)=srfo(inang,np,:,:) * factor
             enddo
          enddo
-
+         !flatfse(:,:) = 1
+         !flatfle(:,:) = nmaxp*mgi
+         !flatfso(:,:) = 1
+         !flatflo(:,:) = nmaxp*mgi
 c     Write the iSRF of this temperature to the fits file
-         do jj = 1, nmaxp*mgi
+
+      do jj = 1, nmaxp*mgi
+         !   write(66,*)  flatfse(jj, iz), flatfle(jj,iz)
+         !   write(99,*)  flatfso(jj, iz), flatflo(jj, iz)
+         !   write(666,*) flatsrfe(:,jj)
+         !   write(999,*) flatsrfo(:,jj)
             call write_SRFs(n, 1, flatsrfe(:,jj), 
      &                            flatfse(jj,iz), 
      &                            flatfle(jj,iz) )
@@ -193,7 +202,11 @@ c     Write the iSRF of this temperature to the fits file
 
       call write_SRF_pointers(1, fSInde, fLene)
       call write_SRF_pointers(2, fSIndo, fLeno)
-      
+      !write(60,*) fSInde
+      !write(66,*) fLene
+      !write(90,*) fSIndo
+      !write(99,*) fLeno
+
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()
 

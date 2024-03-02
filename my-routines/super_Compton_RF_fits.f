@@ -74,7 +74,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
 !$omp do
             do jj=1,nmaxp
                call probab(theta(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
-     &          ,agt,prob(jj,np))
+     &          ,agt,prob(np,jj))
             enddo
 !$omp end do
 !$omp end parallel
@@ -89,18 +89,23 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
      &                      fSInd(curr_ind_s+1 : curr_ind_e), 
      &                      fLen(curr_ind_s+1 : curr_ind_e) )
          
+         do jj=1, nmaxp
+             prob(1:fSInd(curr_ind_s+jj)-1,jj)=0.0
+             prob(fSInd(curr_ind_s+jj)+fLen(curr_ind_s+jj):nmaxp,jj)=0.0
+         enddo
+
+
          do np=1,nmaxp
             check = 0.0
-            do jj=fSInd(curr_ind_s+np),  
-     1               (fSInd(curr_ind_s+np)+fLen(curr_ind_s+np)-1)
-               check = check + df(jj) * prob(jj, np)
+            do jj=1,nmaxp
+               check = check + df(jj) * prob(np, jj)
             enddo
-            prob(:,np) = prob(:,np) *skn(np,iz)*df(np)/wp(np)/check
+            prob(np,:) = prob(np,:) *skn(np,iz)*df(np)/wp(np)/check
          enddo
          
 c     Write the iSRF of this temperature to the fits file
          do jj = 1, nmaxp
-            call write_SRFs(n, 1, prob(jj,:), 
+            call write_SRFs(n, 1, prob(:,jj), 
      &                      fSInd(curr_ind_s+jj), 
      &                      fLen(curr_ind_s+jj) )
             n = n + 1  
