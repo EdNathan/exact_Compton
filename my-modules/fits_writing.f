@@ -262,7 +262,7 @@ c           - Column names
             ttype(1) = 'IND'
             ttype(2) = 'LEN'
 c           - Column data formats      
-            write(tform(1),'(I15,A1)') (en_dim*temp_dim*file_mgi),'I'  
+            write(tform(1),'(I15,A1)') (en_dim*temp_dim*file_mgi),'J'  
             tform(1:2) = trim(tform(1))
 c           - Column units
             tunit(1:2) = ''   
