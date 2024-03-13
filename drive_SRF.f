@@ -55,10 +55,14 @@ c     Default values
       knsamps = 0
       avangle = .true.
 
+      exist = .false.
+      file_unit = 101
+      file_stat = 1
+
 c     Handle parameter file
       inquire( file=input_file, exist=exist )
       if (exist) then
-        open(newunit=file_unit, file='drive_params.dat', 
+        open(newunit=file_unit, file=input_file, 
      &       action='READ', iostat=file_stat )
 c       If file exists, loop through lines            
         do while (file_stat .eq. 0)
@@ -96,8 +100,8 @@ c         Read possible parameters
       write(*,*)'Using limit:   ', limit
 
 c     Allocate arrays
-      allocate ( theta(itrans), temps(nmaxp), wp(nmaxp), df(nmaxp) )
-      allocate ( skn(nmaxp,itrans) )
+      allocate( theta(itrans), temps(nmaxp), wp(nmaxp), df(nmaxp) )
+      allocate( skn(nmaxp,itrans) )
       
 
 C     This line is only ran if the compiler can handle parallisation

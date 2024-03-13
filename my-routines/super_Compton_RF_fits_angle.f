@@ -51,8 +51,8 @@ c
       real*8 profil, temps(itrans)
       real*8 limit
       real*8 srfval, kord
-      real*8, target :: srfe(mgi,nmaxp,mgi,nmaxp), 
-     &                  srfo(mgi,nmaxp,mgi,nmaxp)
+      real*8, target, allocatable :: srfe(:,:,:,:), 
+     &                               srfo(:,:,:,:)
       real*8, pointer :: flatsrfe(:,:), flatsrfo(:,:)
       integer, target :: fSInde(mgi*nmaxp*itrans), 
      &                   fLene(mgi*nmaxp*itrans)
@@ -61,6 +61,8 @@ c
       integer, pointer :: flatfse(:,:), flatfle(:,:)
       integer, pointer :: flatfso(:,:), flatflo(:,:)
       integer n, curr_ind_s, curr_ind_e
+
+      allocate(srfe(mgi,nmaxp,mgi,nmaxp), srfo(mgi,nmaxp,mgi,nmaxp))
 
 c     flatsrf is a pointer to allow accessing to the response function as a matrix
 c     flatsrf( init, final )
@@ -209,6 +211,6 @@ c     Write the iSRF of this temperature to the fits file
 
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()
-
+      deallocate(srfe, srfo)
       return
       end subroutine

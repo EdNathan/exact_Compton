@@ -44,11 +44,14 @@ c
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
       real*8 smit(mgi), agt(mgi)
       real*8 check
-      real*8 prob(nmaxp,nmaxp)
+      real*8, allocatable :: prob(:,:) !real*8 prob(nmaxp,nmaxp)
       real*8 ecen, temps(itrans)
       real*8 limit
       integer :: n, curr_ind_s, curr_ind_e
       integer fSInd(nmaxp*itrans), fLen(nmaxp*itrans)
+
+c     Prob needs to be allocatable to avoid segfaults at large nmaxp
+      allocate( prob(nmaxp,nmaxp) )
 
 c     Check1 is to ensure photon number is conserved in scatterings
 
@@ -118,6 +121,6 @@ c     Write the iSRF of this temperature to the fits file
 
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()
-
+      deallocate( prob )
       return
       end subroutine

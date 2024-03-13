@@ -25,12 +25,23 @@
 #flags= -O3 -fp-model source -fopenmp
 #flags= -O3 -check bounds -fp-model source
 #
-fc=gfortran
 
-#flags=-O3
+
+flags=-O3
 #flags=-O3 -fallow-argument-mismatch -fopenmp
-flags=-O3 -fallow-argument-mismatch
-#flags=-Og -fcheck=all -Wextra -fimplicit-none -fbacktrace -fallow-argument-mismatch 
+#flags=-O3 -fallow-argument-mismatch
+#flags=-Og -g -fcheck=all -Wextra -fimplicit-none -fbacktrace -fallow-argument-mismatch 
+
+ifeq ($(c), intel)
+ fc=ifx
+ # For debugging:
+ # flags=-O0 -g -traceback # -check all -debug all
+ flags += -mcmodel=large -shared-intel
+else
+ fc=gfortran
+endif
+
+
 
 p ?= f
 
@@ -38,7 +49,11 @@ p ?= f
 # This allows the compiler to understand the OMP library for parallisation
 # Note (for future):  -fopenmp is applicable for gfortran.  Intel Compilers use -qopenmp
 ifeq ($(p), t)
-flags += -fopenmp
+ ifeq ($(c), intel)
+  flags += -qopenmp
+ else
+  flags += -fopenmp
+ endif
 endif
 
 libs = -lcfitsio
