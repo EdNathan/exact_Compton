@@ -59,9 +59,9 @@ c     Check1 is to ensure photon number is conserved in scatterings
       n = 1 ! column number of the fits file
 
 c     Set up a new fits file
-      call setup_new_file(nmaxp, itrans, mgi,
+      call setup_new_file(nmaxp, itrans, 0,
      &                    wp, df, temps, smit, agt,
-     &                    skn, limit, .TRUE., 0) !create the fits file
+     &                    skn, limit, .TRUE., mgi) !create the fits file
 
 
       do iz = 1, itrans

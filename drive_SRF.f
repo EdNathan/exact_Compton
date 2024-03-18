@@ -90,7 +90,7 @@ c         Read possible parameters
         close(file_unit)
       endif
 
-      avangle = (knsamps .le. 0)
+      avangle = (mgi .le. 0)
 
       write(*,*)'Using nmaxp:   ', nmaxp
       write(*,*)'Using itrans:  ', itrans
@@ -133,11 +133,11 @@ c
 
 c     Produce file with all SRF's
       if (avangle) then
-            allocate ( smit(mgi), agt(mgi) )
+            allocate ( smit(knsamps), agt(knsamps) )
 c           Get the Gaussian quadratures for angular integration
-            call gaulegf(-1.d0, 1.d0, smit, agt, mgi)
+            call gaulegf(-1.d0, 1.d0, smit, agt, knsamps)
             call super_Compton_RF_fits(itrans, temps, theta, 
-     1                                 nmaxp, wp, df, skn, mgi,
+     1                                 nmaxp, wp, df, skn, knsamps,
      2                                 smit, agt, limit)
       else
 c           We only need postive angles

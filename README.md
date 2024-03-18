@@ -33,9 +33,9 @@ The output of this code is used by the XILLVER model.
 Five parameters can be read in by the program by creating the file <I>drive_params.dat</I>.  The parameters are:
 * nmaxp (number of energy points in the grid)
 * itrans (number of temperatures in the grid)
-* mgi (number of angles to evaluate at)
+* mgi (number of angles to evaluate at, for the angular averaged SRF.  If <=0, the angular averaged SRF is returned.)
 * limit (the fractional limit of the maximum value of the SRF, below which it's assumed to be 0.)
-* knsamps (the number of azimuthal points to integrate the SRF over.  if set to 0, the angluar averaged SRF is returned.)
+* knsamps (the number of angular points to integrate the SRF over)
 
 The file should be formatted as so (these are the default parameters within the code)
 

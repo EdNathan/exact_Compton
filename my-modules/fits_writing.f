@@ -181,13 +181,13 @@ c           Write useful headers
             call ftpkyj(unit, 'TEMP_DIM', temp_dim, 
      &             "Number of temperatures in grid",
      &              status)
-            call ftpkyj(unit, 'ANGLES', mgi, 
-     &             "Number of angles used", 
+            call ftpkyj(unit, 'INT_POINTS', nksamps, 
+     &             "Number of points used during angular integration", 
      &              status)
             if(.not.AVANGLE)then
-               call ftpkyj(unit, 'AZIMUTHAL', nksamps, 
-     &               "Number of points used in azimuthal integration", 
-     &               status)
+               call ftpkyj(unit, 'ANGLES', mgi, 
+     &                "Number of angles in angular grid", 
+     &                status)     
             endif
             call ftpkyl(unit, 'AVANGLE', avangle, 
      &             "Whether the SRF has been integrated over angles", 
