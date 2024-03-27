@@ -47,11 +47,12 @@ c
       real*8, allocatable :: prob(:,:) !real*8 prob(nmaxp,nmaxp)
       real*8 ecen, temps(itrans)
       real*8 limit
-      integer :: n, curr_ind_s, curr_ind_e
-      integer fSInd(nmaxp*itrans), fLen(nmaxp*itrans)
+      integer n, curr_ind_s, curr_ind_e
+      integer, allocatable :: fSInd(:), fLen(:)
 
-c     Prob needs to be allocatable to avoid segfaults at large nmaxp
+c     These arrays need to be allocatable to avoid segfaults at large nmaxp
       allocate( prob(nmaxp,nmaxp) )
+      allocate( fSInd(nmaxp*itrans), fLen(nmaxp*itrans) )
 
 c     Check1 is to ensure photon number is conserved in scatterings
 
@@ -72,7 +73,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
             ecen = wp(np)
 !$omp parallel 
 !$omp& shared(iz, wp, prob, nmaxp, np, ecen, mgi,
-!$omp&         smit, agt)
+!$omp&         smit, agt, theta)
 !$omp& private(jj)
 !$omp do
             do jj=1,nmaxp
@@ -121,6 +122,6 @@ c     Write the iSRF of this temperature to the fits file
 
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()
-      deallocate( prob )
+      deallocate( prob, fSInd, fLen )
       return
       end subroutine

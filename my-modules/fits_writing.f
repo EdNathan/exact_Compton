@@ -181,7 +181,7 @@ c           Write useful headers
             call ftpkyj(unit, 'TEMP_DIM', temp_dim, 
      &             "Number of temperatures in grid",
      &              status)
-            call ftpkyj(unit, 'INT_POINTS', nksamps, 
+            call ftpkyj(unit, 'INT_NUM', nksamps, 
      &             "Number of points used during angular integration", 
      &              status)
             if(.not.AVANGLE)then

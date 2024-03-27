@@ -37,19 +37,21 @@ c     For each initial energy, find the index of the most likely
 c     final energy.   (If fortran 95, could use MAXLOC)
       do eini=1, nmaxp
          do efin=2, nmaxp  
-            if(prob(eini, efin) .GT. prob(eini, maxind(eini)))then
+            if( ABS(prob(eini, efin))
+     1          .GT. ABS(prob(eini, maxind(eini)))
+     2         )then
                maxind(eini) = efin
             endif
          enddo
 
          iSInd(eini) = maxind(eini)
          iEInd(eini) = maxind(eini)
-         problimit(eini) = prob(eini, maxind(eini)) * limit
+         problimit(eini) = ABS(prob(eini, maxind(eini)) * limit)
          
 c        Decrement the value of the "start" index until reaches 1 or
 c        the probability would be below the limit
          do efin = 1, maxind(eini)
-            if(prob(eini, efin) .GT. problimit(eini))then
+            if(ABS(prob(eini, efin)) .GT. problimit(eini))then
                iSInd(eini) = efin
                exit
             endif
@@ -61,7 +63,7 @@ c        the probability would be below the limit
 c        Increment the value of the "end" index until reaches nmaxp or
 c        the probability would be below the limit
          do efin = nmaxp, maxind(eini),-1
-            if(prob(eini, efin) .GT. problimit(eini))then
+            if(ABS(prob(eini, efin)) .GT. problimit(eini))then
                iEInd(eini) = efin
                exit
             endif

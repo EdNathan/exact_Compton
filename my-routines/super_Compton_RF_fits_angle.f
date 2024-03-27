@@ -60,7 +60,7 @@ c
      &                   fLeno(mgi*nmaxp*itrans)
       integer, pointer :: flatfse(:,:), flatfle(:,:)
       integer, pointer :: flatfso(:,:), flatflo(:,:)
-      integer n, curr_ind_s, curr_ind_e
+      integer n
 
       allocate(srfe(mgi,nmaxp,mgi,nmaxp), srfo(mgi,nmaxp,mgi,nmaxp))
 
@@ -96,16 +96,17 @@ c        srf( init_ang, init_en, final_ang, final_en  )
          do inang=1, mgi
             do angflip=-1,1,2
 !$omp parallel
-!$omp& shared(iz,wp,nmaxp,mgi,smit,x,srfe,srfo,kords,kweights,angflip)
-!$omp& private(np,jj,qq,A,B,srfval)
+!$omp& shared(iz,wp,nmaxp,mgi,smit,x,srfe,srfo,kords,kweights,angflip,
+!$omp&        inang,nksmps)
+!$omp& private(np,outang,jj,qq,A,B,srfval,kord)
 !$omp do
                do np = 1, nmaxp ! initial energy
                   do outang=inang, mgi
                      A = sqrt((1-smit(inang)**2)*(1-smit(outang)**2))
-                     B = smit(inang) * smit(outang) * angflip
+                     B = smit(inang) * smit(outang) * DBLE(angflip)
                      do jj=1,nmaxp ! final energy
 c                      Do azimuthal integration
-                        srfval = 0.0
+                        srfval = 0.d0
                         do qq=1,nksmps
                            kord = A*kords(qq)+B
                            srfval = srfval 
@@ -115,9 +116,9 @@ c                      Do azimuthal integration
      4                        * kweights(qq)
                         enddo ! qq
                         srfe(inang,np,outang,jj) = 
-     1                     srfe(inang,np,outang,jj) + srfval
+     1                    srfe(inang,np,outang,jj)+srfval
                         srfo(inang,np,outang,jj) = 
-     1                     srfo(inang,np,outang,jj) + angflip*srfval
+     1                    srfo(inang,np,outang,jj)+DBLE(angflip)*srfval
                      enddo ! jj
                   enddo ! outang
                enddo ! np
@@ -151,11 +152,11 @@ c
 
 c        Go through each 'final' energy/angle row, and set the areas to 0 when below limit
          do jj=1, nmaxp*mgi
-            flatsrfe(1:flatfse(jj,iz)-1,jj) = 0.0
-            flatsrfe(flatfse(jj,iz)+flatfle(jj,iz):nmaxp*mgi,jj) = 0.0
+            flatsrfe(1:flatfse(jj,iz)-1,jj) = 0.d0
+            flatsrfe(flatfse(jj,iz)+flatfle(jj,iz):nmaxp*mgi,jj) = 0.d0
 
-            flatsrfo(1:flatfso(jj,iz)-1,jj) = 0.0
-            flatsrfo(flatfso(jj,iz)+flatflo(jj,iz):nmaxp*mgi,jj) = 0.0
+            flatsrfo(1:flatfso(jj,iz)-1,jj) = 0.d0
+            flatsrfo(flatfso(jj,iz)+flatflo(jj,iz):nmaxp*mgi,jj) = 0.d0
          enddo
 
 c        Check to ensure photon number is conserved in scatterings.  
@@ -166,7 +167,7 @@ c        Int_{0}^{+1} Int_0^\inf Re[init_mu, init_en, fin_mu, fin_en] d{fin_en} 
 c        srf( init_ang, init_en, final_ang, final_en  )
          do inang=1,mgi ! inital angle
             do np=1,nmaxp ! initial energy
-               check = 0.0
+               check = 0.d0
                do outang=1,mgi ! final angle
                   do jj=1,nmaxp ! final energy
                      check = check  
