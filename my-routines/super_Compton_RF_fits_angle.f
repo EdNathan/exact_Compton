@@ -175,7 +175,8 @@ c        srf( init_ang, init_en, final_ang, final_en  )
                   enddo
                enddo
                ! write(*,*) check
-               factor = skn(np,iz)*df(np)*agt(inang)/wp(np)/(2*check)
+               factor = skn(np,iz)*df(np)  ! *smit(inang)
+     1                  *agt(inang)/wp(np)/(check)
                srfe(inang,np,:,:)=srfe(inang,np,:,:) * factor
                srfo(inang,np,:,:)=srfo(inang,np,:,:) * factor
             enddo

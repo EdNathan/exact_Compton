@@ -51,7 +51,7 @@ c
       integer, allocatable :: fSInd(:), fLen(:)
 
 c     These arrays need to be allocatable to avoid segfaults at large nmaxp
-      allocate( prob(nmaxp,nmaxp) )
+      allocate( prob(nmaxp,nmaxp) )   ! Prob(initial, final)
       allocate( fSInd(nmaxp*itrans), fLen(nmaxp*itrans) )
 
 c     Check1 is to ensure photon number is conserved in scatterings
@@ -67,8 +67,8 @@ c     Set up a new fits file
 
       do iz = 1, itrans
          prob = 0.d0
-
 c         temp = theta(iz)*ikbol*mec2          ! temperature in K
+         ! Initial energy
          do np = 1, nmaxp
             ecen = wp(np)
 !$omp parallel 
@@ -76,6 +76,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
 !$omp&         smit, agt, theta)
 !$omp& private(jj)
 !$omp do
+            ! Final energy
             do jj=1,nmaxp
                call probab(theta(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
      &          ,agt,prob(np,jj))
@@ -99,9 +100,9 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
          enddo
 
 
-         do np=1,nmaxp
+         do np=1,nmaxp ! Initial
             check = 0.0
-            do jj=1,nmaxp
+            do jj=1,nmaxp ! Final 
                check = check + df(jj) * prob(np, jj)
             enddo
             prob(np,:) = prob(np,:) *skn(np,iz)*df(np)/wp(np)/check
