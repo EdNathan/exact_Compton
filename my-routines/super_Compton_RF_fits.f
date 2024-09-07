@@ -41,7 +41,8 @@ c
       use fits_writing
       implicit none
       integer itrans, nmaxp, mgi, iz, np, jj
-      integer j_pmax
+      integer j_pmax, jlow, jhigh
+      logical GOUP, GODOWN
       real*8 problim
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
       real*8 smit(mgi), agt(mgi)
@@ -73,7 +74,8 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
 !$omp parallel 
 !$omp& shared(iz, wp, prob, nmaxp, mgi,
 !$omp&         smit, agt, theta)
-!$omp& private(np, ecen, jj, problim, j_pmax)
+!$omp& private(np, ecen, jj, problim, j_pmax,
+!$omp&         jlow, jhigh, GOUP, GODOWN)
 !$omp do
          ! Initial energy
          do np = 1, nmaxp
@@ -82,25 +84,35 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
      &                  agt,prob(np,np))
             problim = prob(np,np)*limit
             j_pmax = np
+            jlow = np-1
+            jhigh = np+1
+            GOUP = .TRUE.
+            GODOWN = .TRUE.
             ! Final energy
-            do jj=np-1, 1, -1
-               call probab(theta(iz),wp(jj)/mec2,ecen,mgi,smit,
-     &                     agt,prob(np,jj))
-               if( prob(np,jj) .LT. problim )then
-                 exit
-               elseif ( prob(np,jj) .GT. prob(np, j_pmax) ) then
-                 j_pmax = jj
-                 problim = prob(np,jj)*limit
+            do while (GOUP .or. GODOWN)
+               if(jlow.LT.1)       GODOWN = .FALSE.
+               if(jhigh.GT.nmaxp)  GOUP = .FALSE.
+               if(GODOWN)then
+                  call probab(theta(iz),wp(jlow)/mec2,ecen,mgi,smit,
+     &                     agt,prob(np,jlow))
+                  if( prob(np,jlow) .LT. problim )then
+                     GODOWN = .FALSE.
+                  elseif ( prob(np,jlow) .GT. prob(np, j_pmax) ) then
+                     j_pmax = jlow
+                     problim = prob(np,jlow)*limit
+                  endif
+                  jlow = jlow -1
                endif
-            enddo
-            do jj=np+1,nmaxp
-               call probab(theta(iz),wp(jj)/mec2,ecen,mgi,smit,
-     &                     agt,prob(np,jj))
-               if( prob(np,jj) .LT. problim )then
-                 exit
-               elseif ( prob(np,jj) .GT. prob(np, j_pmax) ) then
-                 j_pmax = jj
-                 problim = prob(np,jj)*limit
+               if(GOUP)then
+                  call probab(theta(iz),wp(jhigh)/mec2,ecen,mgi,smit,
+     &                     agt,prob(np,jhigh))
+                  if( prob(np,jhigh) .LT. problim )then
+                     GOUP = .FALSE.
+                  elseif ( prob(np,jhigh) .GT. prob(np, j_pmax) ) then
+                     j_pmax = jhigh
+                     problim = prob(np,jhigh)*limit
+                  endif
+                  jhigh = jhigh + 1
                endif
             enddo
          enddo
