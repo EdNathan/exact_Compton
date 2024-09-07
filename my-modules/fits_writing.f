@@ -10,11 +10,7 @@ c        Explicitly export public entities
          integer file_en_dim, file_temp_dim, file_mgi
          integer :: unit=-1, status=0, curr_tab=-1
          character*(100) :: filename='SRF.fits'
-<<<<<<< HEAD
          character*(8) :: code_version='v2.0.0'
-=======
-         character*(8) :: code_version='v2.0'
->>>>>>> a0ff685 (Fixed a few bugs. Updated README.  Include code version/file version keywords)
 
       contains
       
@@ -176,15 +172,9 @@ c           - Column units
             tunit(5) = ''
             
             if(avangle)then
-<<<<<<< HEAD
                file_version = '2.0.0'
             else
                file_version = '3.0.0'
-=======
-               file_version = '2.0'
-            else
-               file_version = '3.0'
->>>>>>> a0ff685 (Fixed a few bugs. Updated README.  Include code version/file version keywords)
             endif
 
             call ftphbn(unit, nrows, tfields, 

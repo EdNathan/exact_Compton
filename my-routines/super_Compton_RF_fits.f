@@ -41,6 +41,8 @@ c
       use fits_writing
       implicit none
       integer itrans, nmaxp, mgi, iz, np, jj
+      integer j_pmax
+      real*8 problim
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
       real*8 smit(mgi), agt(mgi)
       real*8 check
@@ -68,23 +70,42 @@ c     Set up a new fits file
       do iz = 1, itrans
          prob = 0.d0
 c         temp = theta(iz)*ikbol*mec2          ! temperature in K
+!$omp parallel 
+!$omp& shared(iz, wp, prob, nmaxp, mgi,
+!$omp&         smit, agt, theta)
+!$omp& private(np, ecen, jj, problim, j_pmax)
+!$omp do
          ! Initial energy
          do np = 1, nmaxp
-            ecen = wp(np)
-!$omp parallel 
-!$omp& shared(iz, wp, prob, nmaxp, np, ecen, mgi,
-!$omp&         smit, agt, theta)
-!$omp& private(jj)
-!$omp do
+            ecen = wp(np)/mec2
+            call probab(theta(iz),ecen,ecen,mgi,smit,
+     &                  agt,prob(np,np))
+            problim = prob(np,np)*limit
+            j_pmax = np
             ! Final energy
-            do jj=1,nmaxp
-               call probab(theta(iz),wp(jj)/mec2,ecen/mec2,mgi,smit
-     &          ,agt,prob(np,jj))
+            do jj=np-1, 1, -1
+               call probab(theta(iz),wp(jj)/mec2,ecen,mgi,smit,
+     &                     agt,prob(np,jj))
+               if( prob(np,jj) .LT. problim )then
+                 exit
+               elseif ( prob(np,jj) .GT. prob(np, j_pmax) ) then
+                 j_pmax = jj
+                 problim = prob(np,jj)*limit
+               endif
             enddo
+            do jj=np+1,nmaxp
+               call probab(theta(iz),wp(jj)/mec2,ecen,mgi,smit,
+     &                     agt,prob(np,jj))
+               if( prob(np,jj) .LT. problim )then
+                 exit
+               elseif ( prob(np,jj) .GT. prob(np, j_pmax) ) then
+                 j_pmax = jj
+                 problim = prob(np,jj)*limit
+               endif
+            enddo
+         enddo
 !$omp end do
 !$omp end parallel
-         enddo
-
 
 
          curr_ind_s = (iz-1)*nmaxp
