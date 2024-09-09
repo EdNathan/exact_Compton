@@ -10,7 +10,7 @@ c        Explicitly export public entities
          integer file_en_dim, file_temp_dim, file_mgi
          integer :: unit=-1, status=0, curr_tab=-1
          character*(100) :: filename='SRF.fits'
-         character*(8) :: code_version='v2.0.0'
+         character*(8) :: code_version='v2.0.1'
 
       contains
       
@@ -172,7 +172,7 @@ c           - Column units
             tunit(5) = ''
             
             if(avangle)then
-               file_version = '2.0.0'
+               file_version = '2.0.1'
             else
                file_version = '3.0.0'
             endif
@@ -385,6 +385,13 @@ c           Write the iSRF
             call ftpcld(unit, colnum, rownum, 1, num, 
      &                  SRF(ind:endind), status)
             call print_any_errors()
+            if (status.GT.0) then
+              write(*,*)rownum, colnum, ind, num
+              write(*,*)SRF(ind:endind)
+              status=0
+              call close_and_save_fits()
+              call EXIT(1)
+            endif
          end subroutine write_SRFs
 c-----------------------------------------------------------------------
 

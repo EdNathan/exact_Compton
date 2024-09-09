@@ -1,3 +1,22 @@
+      function phiK(muprime, muj, thetaK)
+         use constants, only :: pi
+         implicit none
+         double precision, intent(in) :: muprime, muj, thetaK
+         double precision tmp
+         tmp = COS(thetaK) - (muprime*muj)
+         tmp = tmp / SQRT( (1-muprime**2) * (1-muj**2) )
+         if(tmp.GE.1d0)then
+            phiK = 0.d0
+            return
+         elseif(tmp.LE.-1.d0)then
+            phiK = pi
+            return
+         else
+            phi = ACOS(tmp)
+         endif
+      end function
+
+
 !-------------------------------------------------------------------------------------------------      
       subroutine super_Compton_RF_fits_angle(itrans, temps, theta,
      &                                       nmaxp, wp, df, skn, mgi,
@@ -41,7 +60,9 @@ c
       use constants
       use fits_writing
       implicit none
-      integer itrans, nmaxp, mgi, iz, np, jj, qq
+      integer, parameter :: mumeshN = 50
+      double precision mumesh(mumeshN), muweights(mumeshN)
+      integer itrans, nmaxp, mgi, iz, np, jj, qq, kk
       integer nksmps, inang, outang, angflip
       real*8 A, B
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans),x
@@ -58,12 +79,59 @@ c
      &                   fLene(mgi*nmaxp*itrans)
       integer, target :: fSIndo(mgi*nmaxp*itrans), 
      &                   fLeno(mgi*nmaxp*itrans)
+      real*8 thetaK(nksmps+1)
+      real*8 we(nksmps, mgi, mgi), wo(nksmps, mgi, mgi), wval
+      real*8 half_mus(-mgi:mgi) 
+      real*8 Fk(kk)
+
       integer, pointer :: flatfse(:,:), flatfle(:,:)
       integer, pointer :: flatfso(:,:), flatflo(:,:)
       integer n
+      
+      half_mus(0) = 0.d0
+      do inang=1, mgi
+         half_mus(inang) = half_mus(inang-1) + agt(inang)
+         half_mus(-inang) = half_mus(inang)
+      enddo
+      ! Just to be sure / account for numerics
+      half_mus(mgi) = 1.d0
+      half_mus(-mgi) = -1.d0
+
+      do kk=1,nksmps+1
+         thetaK(kk) = dble(kk-1)/dble(nksmps) * pi
+         do inang=1,mgi
+            do angflip=-1,1,2
+               call gaulegf(half_mus(inang-1), half_mus(inang-1), 
+     1                      mumesh, muweights, mumeshN)
+               do outang=1,mgi
+                  wval = 0.d0
+                  do qq=1,mumeshN
+                     wval = wval + phiK(mumesh(qq),smit(outang),
+     1                                  thetaK(kk)) * muweights(qq)
+                  enddo ! qq
+                  we(nksmps, mgi, mgi) = we(nksmps, mgi, mgi) + wval
+                  wo(nksmps, mgi, mgi) = wo(nksmps, mgi, mgi) + angflip * wval
+               enddo  ! outang
+
+            enddo  ! angflip
+         enddo  ! inang
+      enddo  ! kk
+      we = we / 2.d0
+      wo = wo / 2.d0
+      write(*,*)"Array of w computed"
+
+      call set_filename('angle.fits') !name of the fits file
+      n = 1 ! column number of the fits file
+ 
+c     Set up a new fits file
+      call setup_new_file(nmaxp, itrans, mgi,
+     &                    wp, df, temps, smit, agt,
+     &                    skn, limit, .FALSE., nksmps) !create the fits file
+
+
+      
 
       allocate(srfe(mgi,nmaxp,mgi,nmaxp), srfo(mgi,nmaxp,mgi,nmaxp))
-
 c     flatsrf is a pointer to allow accessing to the response function as a matrix
 c     flatsrf( init, final )
       flatsrfe(1:mgi*nmaxp, 1:mgi*nmaxp) => srfe
@@ -76,13 +144,6 @@ c     flatfs and flatfl are pointers to fSInd and fLen to make it easier to deal
       flatfso(1:mgi*nmaxp, 1:itrans) => fSIndo
       flatflo(1:mgi*nmaxp, 1:itrans) => fLeno
 
-      call set_filename('angle.fits') !name of the fits file
-      n = 1 ! column number of the fits file
- 
-c     Set up a new fits file
-      call setup_new_file(nmaxp, itrans, mgi,
-     &                    wp, df, temps, smit, agt,
-     &                    skn, limit, .FALSE., nksmps) !create the fits file
 
       call gaulegf(-1.d0, 1.d0, kords, kweights, nksmps)
 
@@ -92,40 +153,24 @@ c     Set up a new fits file
          srfe = 0.d0
          srfo = 0.d0
 
-c        srf( init_ang, init_en, final_ang, final_en  )
-         do inang=1, mgi
-            do angflip=-1,1,2
-!$omp parallel
-!$omp& shared(iz,wp,nmaxp,mgi,smit,x,srfe,srfo,kords,kweights,angflip,
-!$omp&        inang,nksmps)
-!$omp& private(np,outang,jj,qq,A,B,srfval,kord)
-!$omp do
-               do np = 1, nmaxp ! initial energy
-                  do outang=inang, mgi
-                     A = sqrt((1-smit(inang)**2)*(1-smit(outang)**2))
-                     B = smit(inang) * smit(outang) * DBLE(angflip)
-                     do jj=1,nmaxp ! final energy
-c                      Do azimuthal integration
-                        srfval = 0.d0
-                        do qq=1,nksmps
-                           kord = A*kords(qq)+B
-                           srfval = srfval 
-     1                        + profil(1,wp(np)/mec2,wp(jj)/mec2, 
-     2                                 kord,x)
-     3                        / sqrt(1 - kords(qq)**2)
-     4                        * kweights(qq)
-                        enddo ! qq
-                        srfe(inang,np,outang,jj) = 
-     1                    srfe(inang,np,outang,jj)+srfval
-                        srfo(inang,np,outang,jj) = 
-     1                    srfo(inang,np,outang,jj)+DBLE(angflip)*srfval
-                     enddo ! jj
-                  enddo ! outang
-               enddo ! np
-!$omp end do
-!$omp end parallel
-            enddo ! angflip
-         enddo ! inang
+         do np = 1, nmaxp ! initial energy
+            do jj=1, nmaxp ! final energy
+               do kk=1, nksmps
+                  ! This approximates the integratal at thetaK with a simple sample.  Could maybe integrate over a few points...
+                  ! Probably not a major issue as our grid of thetaK is very fine
+                  Fk(kk) = profil(1,wp(np)/mec2,wp(jj)/mec2, 
+     1                        COS( (thetaK(kk) + thetaK(kk+1))/2),x) / pi
+                  do inang=1, mgi
+                    do outang=1, mgi
+                       ! srf( init_ang, init_en, final_ang, final_en  )
+                       srfe(inang,np,outang,jj) = srfe(inang,np,outang,jj) + Fk(kk) * (w(kk, inang, outang) + w(kk, 1-inang, outang))/2
+                       srfo(inang,np,outang,jj) = srfo(inang,np,outang,jj) + Fk(kk) * (w(kk, inang, outang) - w(kk, 1-inang, outang))/2
+                     enddo
+                  enddo
+               enddo
+            enddo
+         enddo
+
          do inang=2, mgi
             do outang=1,inang-1
                do np=1, nmaxp
@@ -181,17 +226,9 @@ c        srf( init_ang, init_en, final_ang, final_en  )
                srfo(inang,np,:,:)=srfo(inang,np,:,:) * factor
             enddo
          enddo
-         !flatfse(:,:) = 1
-         !flatfle(:,:) = nmaxp*mgi
-         !flatfso(:,:) = 1
-         !flatflo(:,:) = nmaxp*mgi
 c     Write the iSRF of this temperature to the fits file
 
       do jj = 1, nmaxp*mgi
-         !   write(66,*)  flatfse(jj, iz), flatfle(jj,iz)
-         !   write(99,*)  flatfso(jj, iz), flatflo(jj, iz)
-         !   write(666,*) flatsrfe(:,jj)
-         !   write(999,*) flatsrfo(:,jj)
             call write_SRFs(n, 1, flatsrfe(:,jj), 
      &                            flatfse(jj,iz), 
      &                            flatfle(jj,iz) )
@@ -206,10 +243,6 @@ c     Write the iSRF of this temperature to the fits file
 
       call write_SRF_pointers(1, fSInde, fLene)
       call write_SRF_pointers(2, fSIndo, fLeno)
-      !write(60,*) fSInde
-      !write(66,*) fLene
-      !write(90,*) fSIndo
-      !write(99,*) fLeno
 
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()

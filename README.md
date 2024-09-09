@@ -78,7 +78,7 @@ Use the IND and LEN columns from table 4 to reconstruct the full iSRF.
 ## File versions
 This software produces SRF files of version '2.0' (angle averaged format) and version '3.0' (angle resolved format), designed to be used with XILLVER v3.4e onwards.
 ## Code info
-     Version: 2.0.0
+     Version: 2.0.1
 
      Authors: Javier Garcia (javier@caltech.edu)
               Ekaterina Sokolova-Lapa (ekaterina.sokolova-lapa@fau.de)
