@@ -100,7 +100,7 @@ c         Read possible parameters
       write(*,*)'Using limit:   ', limit
 
 c     Allocate arrays
-      allocate( theta(itrans), temps(nmaxp), wp(nmaxp), df(nmaxp) )
+      allocate( theta(itrans), temps(itrans), wp(nmaxp), df(nmaxp) )
       allocate( skn(nmaxp,itrans) )
       
 
@@ -144,10 +144,9 @@ c           We only need postive angles
             allocate ( smit(mgi), agt(mgi) )
             call gaulegf(0.d0, 1.d0, smit, agt, mgi)
             call super_Compton_RF_fits_angle(itrans, temps, theta, 
-     1                                       nmaxp, wp,df, skn, mgi,
-     2                                       smit, 
-     3                                       agt,
-     4                                       knsamps, limit)
+     1                                       nmaxp, wp, df, skn, 
+     2                                       mgi, smit, agt,
+     3                                       knsamps, limit)
       endif
 c     Get current time
       call cpu_time(tfin)

@@ -75,8 +75,10 @@ For the angular resolved version, there are two columns, relating to the symmetr
 
 Each element in each column is a variable length array, having trimmed out all the elements below the cut-off limit.  Each element in this array also corresponds to (energy, angle) pairs, with the angle varying first.
 Use the IND and LEN columns from table 4 to reconstruct the full iSRF.
+## File versions
+This software produces SRF files of version '2.0' (angle averaged format) and version '3.0' (angle resolved format), designed to be used with XILLVER v3.4e onwards.
 ## Code info
-     Version: 0.5.0 - Tue Feb 28th 14:35:00 PDT 2023
+     Version: 2.0.0
 
      Authors: Javier Garcia (javier@caltech.edu)
               Ekaterina Sokolova-Lapa (ekaterina.sokolova-lapa@fau.de)
