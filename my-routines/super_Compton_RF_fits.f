@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------------------------------
       subroutine super_Compton_RF_fits(itrans, temps, theta, 
-     &                                 nmaxp, wp, df, skn, mgi, 
-     &                                 smit, agt, limit)
+     &                                 nmaxp, wp, df, skn, 
+     &                                 nksmps, limit)
 c
 c     This routine writes a file with the super redistribution function (SRF) for Compton
 c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
@@ -25,13 +25,16 @@ c         nmaxp: Total number of energy points
 c         wp: Array (nmaxp) of energies in eV
 c         df: Array (nmaxp) of delta energies in eV
 c         skn: Array (nmaxp) of Kein-Nishina cross sections
-c         mgi: Total number of angles 
-c         smit: Array (mgi) Legendre ordinates (angles)
-c         agt: Array (mgi) weights
+c         nksmps: Total number of angles for averaging
+c
 c         limit: Fractional limit below which the SRF is set to 0
 c
 c     Output arguments: 
 c         None
+c
+c     Internal aruments:
+c         smit: Array (nksmps) Legendre ordinates (angles)
+c         agt: Array (nksmps) weights
 c
 c     Requires:
 c         probab.f: Routine for the RF calculation
@@ -40,12 +43,12 @@ c
       use constants
       use fits_writing
       implicit none
-      integer itrans, nmaxp, mgi, iz, np, jj
+      integer itrans, nmaxp, nksmps, iz, np, jj
       integer j_pmax, jlow, jhigh
       logical GOUP, GODOWN
       real*8 problim
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans)
-      real*8 smit(mgi), agt(mgi)
+      real*8 smit(nksmps), agt(nksmps)
       real*8 check
       real*8, allocatable :: prob(:,:) !real*8 prob(nmaxp,nmaxp)
       real*8 ecen, temps(itrans)
@@ -62,17 +65,19 @@ c     Check1 is to ensure photon number is conserved in scatterings
       call set_filename('table.fits') !name of the fits file
       n = 1 ! column number of the fits file
 
+c     Get the Gaussian quadratures for angular integration
+      call gaulegf(-1.d0, 1.d0, smit, agt, nksmps)
+
 c     Set up a new fits file
       call setup_new_file(nmaxp, itrans, 0,
      &                    wp, df, temps, smit, agt,
-     &                    skn, limit, .TRUE., mgi) !create the fits file
-
+     &                    skn, limit, .TRUE., nksmps) !create the fits file
 
       do iz = 1, itrans
          prob = 0.d0
 c         temp = theta(iz)*ikbol*mec2          ! temperature in K
 !$omp parallel 
-!$omp& shared(iz, wp, prob, nmaxp, mgi,
+!$omp& shared(iz, wp, prob, nmaxp, nksmps,
 !$omp&         smit, agt, theta)
 !$omp& private(np, ecen, jj, problim, j_pmax,
 !$omp&         jlow, jhigh, GOUP, GODOWN)
@@ -80,7 +85,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
          ! Initial energy
          do np = 1, nmaxp
             ecen = wp(np)/mec2
-            call probab(theta(iz),ecen,ecen,mgi,smit,
+            call probab(theta(iz),ecen,ecen,nksmps,smit,
      &                  agt,prob(np,np))
             problim = prob(np,np)*limit
             j_pmax = np
@@ -93,7 +98,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
                if(jlow.LT.1)       GODOWN = .FALSE.
                if(jhigh.GT.nmaxp)  GOUP = .FALSE.
                if(GODOWN)then
-                  call probab(theta(iz),wp(jlow)/mec2,ecen,mgi,smit,
+                  call probab(theta(iz),wp(jlow)/mec2,ecen,nksmps,smit,
      &                     agt,prob(np,jlow))
                   if( prob(np,jlow) .LT. problim )then
                      GODOWN = .FALSE.
@@ -104,7 +109,7 @@ c         temp = theta(iz)*ikbol*mec2          ! temperature in K
                   jlow = jlow -1
                endif
                if(GOUP)then
-                  call probab(theta(iz),wp(jhigh)/mec2,ecen,mgi,smit,
+                  call probab(theta(iz),wp(jhigh)/mec2,ecen,nksmps,smit,
      &                     agt,prob(np,jhigh))
                   if( prob(np,jhigh) .LT. problim )then
                      GOUP = .FALSE.

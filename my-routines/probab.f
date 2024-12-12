@@ -60,7 +60,8 @@ c.......  and now I do not remember their equation.
 c.......
 c.......  nr=1 : exact by Suleimanov et al. (2012), Madej et al. (2017)
 c.......
-      double precision function profil(nr,eps,eps1,costh,x)
+      PURE double precision function profil(nr,eps,eps1,costh,x)
+      use constants, only : pi
       implicit none
 c.......  Computation of the exact Compton redisribution function
 c.......	     P (epsilon, epsilon1, costh, x),
@@ -74,30 +75,42 @@ c.......	      x    = m c**2 / kT
 c.......
 c.......  Thirty-two point Gauss-Laguerre quadrature is used below.
 c.......
-      integer i,j,nr,nsize
-      double precision integ,eps,eps1,costh,x,ag,aj,xj,bk2,gammin
-      double precision pi,zfe,gam_star,q_up,q_down,fexact
+      integer, intent(IN) :: nr
+      double precision, intent(IN) :: eps, eps1, costh, x
+      integer i,j,nsize
+      double precision integ,ag,gammin
+      double precision zfe,gam_star,q_up,q_down
+      INTERFACE
+         PURE double precision function fexact (eps,eps1,costh,gamma)
+            double precision, INTENT(IN) ::  eps,eps1,costh,gamma
+         end function fexact
+         PURE double precision function bk2 (x)
+            double precision, INTENT(IN) ::  x
+         end function bk2
+      END INTERFACE
       parameter ( nsize = 32 )
-      dimension xj(nsize),aj(nsize)
-      data pi/3.141592654d0/
 c.......  The following gives nodes and weights of the 32-point
 c.......  Gauss-Laguerre quadrature for integration over electron
 c.......  Lorenz factor.
 c.......  tables: XJ - nodes, AJ - weights.
-      data (xj(i),aj(i),i=1,nsize)/0.044489366d0,1.09218342d-1,0.2345261
-     *1d0,2.10443108d-1,0.576884629d0,2.352132297d-1,1.07244875d0,1.9590
-     *3336d-1,1.72240878d0,1.29983786d-1,2.528336706d0,7.05786239d-2,3.4
-     *92213273d0,3.17609125d-2,4.61645677d0,1.191821484d-2,5.9039585d0,3
-     *.738816295d-3,7.358126733d0,9.8080331d-4,8.98294092d0,2.14864919d-
-     *4,10.78301863d0,3.920342d-5,12.76369799d0,5.9345416d-6,14.93113976
-     *d0,7.4164046d-7,17.29245434d0,7.6045679d-8,19.85586094d0,6.3506022
-     *d-9,22.63088901d0,4.28138297d-10,25.62863602d0,2.30589949d-11,28.8
-     *6210182d0,9.7993793d-13,32.34662915d0,3.2378017d-14,36.10049481d0,
-     *8.17182344d-16,40.1457198d0,1.54213383d-17,44.509208d0,2.11979229d
-     *-19,49.22439499d0,2.05442967d-21,54.3337213d0,1.34698259d-23,59.89
-     *250916d0,5.6612941d-26,65.97537729d0,1.41856055d-28,72.68762809d0,
-     *1.91337549d-31,80.18744698d0,1.19224876d-34,88.73534042d0,2.671511
-     *22d-38,98.82954287d0,1.33861694d-42,111.7513981d0,4.5105362d-48/
+      double precision, parameter :: xj(nsize)=(/
+     & 0.044489366d0, 0.23452611d0, 0.576884629d0, 1.07244875d0,
+     & 1.72240878d0, 2.528336706d0, 3.492213273d0, 4.61645677d0,
+     & 5.9039585d0, 7.358126733d0, 8.98294092d0, 10.78301863d0,
+     & 12.76369799d0, 14.93113976d0, 17.29245434d0, 19.85586094d0,
+     & 22.63088901d0, 25.62863602d0, 28.86210182d0, 32.34662915d0,
+     & 36.10049481d0, 40.1457198d0, 44.509208d0, 49.22439499d0,
+     & 54.3337213d0, 59.89250916d0, 65.97537729d0, 72.68762809d0,
+     & 80.18744698d0, 88.73534042d0, 98.82954287d0, 111.7513981d0 /)
+      double precision, parameter :: aj(nsize)=(/
+     & 1.09218342d-1, 2.10443108d-1, 2.352132297d-1, 1.95903336d-1,
+     & 1.29983786d-1, 7.05786239d-2, 3.17609125d-2, 1.191821484d-2,
+     & 3.738816295d-3, 9.8080331d-4, 2.14864919d-4, 3.920342d-5,
+     & 5.9345416d-6, 7.4164046d-7, 7.6045679d-8, 6.3506022d-9,
+     & 4.28138297d-10, 2.30589949d-11, 9.7993793d-13, 3.2378017d-14,
+     & 8.17182344d-16, 1.54213383d-17, 2.11979229d-19, 2.05442967d-21,
+     & 1.34698259d-23, 5.6612941d-26, 1.41856055d-28, 1.91337549d-31,
+     & 1.19224876d-34, 2.67151122d-38, 1.33861694d-42, 4.5105362d-48 /)
 c.......
       profil=0.d0
       q_down=eps*eps1*(1-costh)
@@ -124,10 +137,12 @@ c.......
       end
 c.......
 c.......  Formulae from Madej et al. (2017):
-      double precision function fexact (eps,eps1,costh,gamma)
+      PURE double precision function fexact (eps,eps1,costh,gamma)
       implicit none
-      double precision eps,eps1,costh,gamma,a2_plus,a2_minus,
-     *   q_up,q_down,d_plus,d_minus,a_minus,a_plus,a_diff,a2_diff
+      double precision, INTENT(IN) ::  eps,eps1,costh,gamma
+      double precision a2_plus,a2_minus
+      double precision q_up,q_down,d_plus,d_minus,a_minus
+      double precision a_plus,a_diff,a2_diff
 c.......
       q_down=eps*eps1*(1-costh)
       q_up=dsqrt((eps-eps1)**2+2*q_down)

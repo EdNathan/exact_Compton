@@ -36,9 +36,11 @@ ifeq ($(c), intel)
  fc=ifx
  # For debugging:
  # flags=-O0 -g -traceback # -check all -debug all
- # flags += -mcmodel=large -shared-intel
+   flags += -mcmodel=large -shared-intel
 else
  fc=gfortran
+  # For debugging:
+  # flags=-Og -g -fcheck=all
 endif
 
 

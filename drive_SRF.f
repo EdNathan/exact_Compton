@@ -30,6 +30,7 @@ c              Ekaterina Sokolova-Lapa (ekaterina.sokolova-lapa@fau.de)
 c
 c........    
       use omp_lib
+      use constants
       implicit none
       integer nmaxp, itrans, mgi, knsamps
       ! parameter (nmaxp=500, itrans=70, mgi=8)
@@ -43,9 +44,8 @@ c........
       double precision pemin, pemax, pemax2
       double precision, allocatable :: theta(:), temps(:), wp(:), df(:)
       double precision, allocatable ::  skn(:,:)
-      double precision, allocatable ::  smit(:), agt(:)
       double precision tini, tfin, tcpu, temp
-      double precision limit
+      double precision limit, profil
 
 c     Default values
       limit = 1.d-3
@@ -118,7 +118,7 @@ c     Array of temperatures
       do ii=1,itrans
          temps(ii) = temp
          call theta_from_temp(temp, theta(ii))
-         temp = temp*(1.d10/1.d4)**(1.d0/dfloat(itrans-1))
+         temp = temp*(1.d10/1.d4)**(1.d0/dfloat(itrans-1)) ! If itrans=1, this leave a div 0 error, but that doesn't matter
       enddo
 c
 c     Photon energy grid
@@ -127,26 +127,20 @@ c     Photon energy grid
       pemax2 = 1.d6
       call enegrd(nmaxp, pemin, pemax, pemax2, wp, df)
 c
+      write(*,*) "Beginning cross-section calculation"
 c     Calculate the Compton Cross Section
       call scattxs(nmaxp, wp, itrans, theta, skn)
 c
-
+      write(*,*) "Beginning SRF calculation"
 c     Produce file with all SRF's
       if (avangle) then
-            allocate ( smit(knsamps), agt(knsamps) )
-c           Get the Gaussian quadratures for angular integration
-            call gaulegf(-1.d0, 1.d0, smit, agt, knsamps)
             call super_Compton_RF_fits(itrans, temps, theta, 
-     1                                 nmaxp, wp, df, skn, knsamps,
-     2                                 smit, agt, limit)
+     1                                 nmaxp, wp, df, skn,
+     2                                 knsamps, limit)
       else
-c           We only need postive angles
-            allocate ( smit(mgi), agt(mgi) )
-            call gaulegf(0.d0, 1.d0, smit, agt, mgi)
             call super_Compton_RF_fits_angle(itrans, temps, theta, 
      1                                       nmaxp, wp, df, skn, 
-     2                                       mgi, smit, agt,
-     3                                       knsamps, limit)
+     2                                       mgi, knsamps, limit)
       endif
 c     Get current time
       call cpu_time(tfin)

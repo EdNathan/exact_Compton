@@ -1,26 +1,7 @@
-      function phiK(muprime, muj, thetaK)
-         use constants, only :: pi
-         implicit none
-         double precision, intent(in) :: muprime, muj, thetaK
-         double precision tmp
-         tmp = COS(thetaK) - (muprime*muj)
-         tmp = tmp / SQRT( (1-muprime**2) * (1-muj**2) )
-         if(tmp.GE.1d0)then
-            phiK = 0.d0
-            return
-         elseif(tmp.LE.-1.d0)then
-            phiK = pi
-            return
-         else
-            phi = ACOS(tmp)
-         endif
-      end function
-
-
 !-------------------------------------------------------------------------------------------------      
       subroutine super_Compton_RF_fits_angle(itrans, temps, theta,
-     &                                       nmaxp, wp, df, skn, mgi,
-     &                                       smit, agt, nksmps, limit) 
+     &                                       nmaxp, wp, df, skn,
+     &                                       mgi, nksmps, limit) 
 c     This routine writes a file with the super redistribution function (SRF) for Compton
 c     scatterting. For a given gas temperature T and final photon energy Ef, the SRF is
 c     defined for a set of initial photon energies Ei as:
@@ -60,69 +41,53 @@ c
       use constants
       use fits_writing
       implicit none
-      integer, parameter :: mumeshN = 50
-      double precision mumesh(mumeshN), muweights(mumeshN)
-      integer itrans, nmaxp, mgi, iz, np, jj, qq, kk
-      integer nksmps, inang, outang, angflip
-      real*8 A, B
+      integer itrans, nmaxp, mgi, iz, np, jj, qq, kk, mu
+      integer nksmps, ang1, ang2, inang, outang
+      integer j_pmax, jlow, jhigh
+      logical GOUP, GODOWN
+      integer, parameter :: MUintnum = 1000
+      real*8 MUintp(MUintnum), MUintw(MUintnum)
+      real*8 A, B, ecen
       real*8 theta(itrans), wp(nmaxp), df(nmaxp), skn(nmaxp,itrans),x
-      real*8 smit(mgi), agt(mgi)
-      real*8 kords(nksmps), kweights(nksmps)
+      real*8 smit(mgi), agt(mgi), halfsmit(mgi+1)
+      real*8 thetak(nksmps+1), muk(nksmps+1), dthetak
+      real*8 phik, phik1, phiint
       real*8 check, factor
       real*8 profil, temps(itrans)
-      real*8 limit
+      real*8 limit, problim, total, maxtot
       real*8 srfval, kord
-      real*8, target, allocatable :: srfe(:,:,:,:), 
-     &                               srfo(:,:,:,:)
+      real*8, target, allocatable :: srfe(:,:,:,:), srfo(:,:,:,:)                    
       real*8, pointer :: flatsrfe(:,:), flatsrfo(:,:)
-      integer, target :: fSInde(mgi*nmaxp*itrans), 
-     &                   fLene(mgi*nmaxp*itrans)
-      integer, target :: fSIndo(mgi*nmaxp*itrans), 
-     &                   fLeno(mgi*nmaxp*itrans)
-      real*8 thetaK(nksmps+1)
-      real*8 we(nksmps, mgi, mgi), wo(nksmps, mgi, mgi), wval
-      real*8 half_mus(-mgi:mgi) 
-      real*8 Fk(kk)
-
+      integer, target, allocatable :: fSInde(:), fLene(:) 
+      integer, target, allocatable :: fSIndo(:), fLeno(:) 
+      real*8, allocatable :: we(:, :, :), wo(:, :, :)
+      real*8 wval
       integer, pointer :: flatfse(:,:), flatfle(:,:)
       integer, pointer :: flatfso(:,:), flatflo(:,:)
       integer n
-      
-      half_mus(0) = 0.d0
-      do inang=1, mgi
-         half_mus(inang) = half_mus(inang-1) + agt(inang)
-         half_mus(-inang) = half_mus(inang)
-      enddo
-      ! Just to be sure / account for numerics
-      half_mus(mgi) = 1.d0
-      half_mus(-mgi) = -1.d0
 
-      do kk=1,nksmps+1
-         thetaK(kk) = dble(kk-1)/dble(nksmps) * pi
-         do inang=1,mgi
-            do angflip=-1,1,2
-               call gaulegf(half_mus(inang-1), half_mus(inang-1), 
-     1                      mumesh, muweights, mumeshN)
-               do outang=1,mgi
-                  wval = 0.d0
-                  do qq=1,mumeshN
-                     wval = wval + phiK(mumesh(qq),smit(outang),
-     1                                  thetaK(kk)) * muweights(qq)
-                  enddo ! qq
-                  we(nksmps, mgi, mgi) = we(nksmps, mgi, mgi) + wval
-                  wo(nksmps, mgi, mgi) = wo(nksmps, mgi, mgi) + angflip * wval
-               enddo  ! outang
-
-            enddo  ! angflip
-         enddo  ! inang
-      enddo  ! kk
-      we = we / 2.d0
-      wo = wo / 2.d0
-      write(*,*)"Array of w computed"
+      INTERFACE
+         PURE SUBROUTINE kloop(e1, e2, x, nksmps, muk, we, wo, mgi,
+     1                         total, se, so)
+            integer, intent(IN) :: nksmps, mgi
+            real*8, intent(IN) :: e1, e2, x
+            real*8, intent(IN) :: muk(nksmps)
+            real*8, intent(IN) :: we(mgi, mgi, nksmps)
+            real*8, intent(IN) :: wo(mgi, mgi, nksmps)
+            real*8, intent(OUT) :: total
+            real*8, intent(OUT) :: se(mgi, mgi), so(mgi, mgi)
+         END SUBROUTINE kloop
+         PURE DOUBLE PRECISION FUNCTION getphi(v)
+            real*8, INTENT(IN) :: v
+         END FUNCTION getphi
+      END INTERFACE
 
       call set_filename('angle.fits') !name of the fits file
       n = 1 ! column number of the fits file
  
+c     Get the angles - we only need positive ones
+      call gaulegf(0.d0, 1.d0, smit, agt, mgi)
+
 c     Set up a new fits file
       call setup_new_file(nmaxp, itrans, mgi,
      &                    wp, df, temps, smit, agt,
@@ -132,6 +97,9 @@ c     Set up a new fits file
       
 
       allocate(srfe(mgi,nmaxp,mgi,nmaxp), srfo(mgi,nmaxp,mgi,nmaxp))
+      allocate(fSInde(mgi*nmaxp*itrans), fLene(mgi*nmaxp*itrans))
+      allocate(fSIndo(mgi*nmaxp*itrans), fLeno(mgi*nmaxp*itrans))
+      allocate(we(mgi, mgi, nksmps), wo(mgi, mgi, nksmps) )
 c     flatsrf is a pointer to allow accessing to the response function as a matrix
 c     flatsrf( init, final )
       flatsrfe(1:mgi*nmaxp, 1:mgi*nmaxp) => srfe
@@ -144,44 +112,135 @@ c     flatfs and flatfl are pointers to fSInd and fLen to make it easier to deal
       flatfso(1:mgi*nmaxp, 1:itrans) => fSIndo
       flatflo(1:mgi*nmaxp, 1:itrans) => fLeno
 
+!     Get half steps in angular grid
+      halfsmit(1) = 0.d0
+      do qq = 1, mgi
+         halfsmit(qq+1) = halfsmit(qq) + agt(qq)
+      enddo
 
-      call gaulegf(-1.d0, 1.d0, kords, kweights, nksmps)
+!     halfsmit should end at 1. This is a small correction for numerical precision
+      halfsmit = halfsmit / halfsmit(mgi+1)     
 
+
+!     0 < thetak < pi      - note, this theta is angle, not temperature
+!     Not allowed to be 0, as cos(theta)=1 causes problems
+      do qq = 1, nksmps+1
+          thetak(qq) = pi * (DBLE(qq) / DBLE(nksmps+2) )
+          muk(qq) = COS(thetak(qq))
+      enddo
+      dthetak = pi / DBLE(nksmps)
+      
+      we = 0.d0
+      wo = 0.d0
+      ! These loops produce the w(j', j, k) from eqs A6/A7.
+      ! Split into symmetric and anti-symmetric parts
+      do ang1=1, mgi
+         call gaulegf( halfsmit(ang1), halfsmit(ang1+1),  
+     1                 MUintp, MUintw, MUintnum )
+         do ang2=ang1,mgi
+!$omp parallel
+!$omp& shared(ang1, ang2, muk, smit, MUintp, MUintw,
+!$omp&        we, wo, nksmps)  
+!$omp& private(mu, kk, A, B, phik, phik1, phiint)
+!$omp do         
+            do mu=1,MUintnum
+               A = 1/sqrt((1-MUintp(mu)**2)*(1-smit(ang2)**2))
+               B = MUintp(mu)*smit(ang2)
+               do kk=1, nksmps
+                  ! When mu' and muj have same sign
+                  phik  = getphi( A*(muk(kk) - B) )
+                  phik1 = getphi( A*(muk(kk+1) - B) )
+                  phiint = (phik1 - phik) * MUintw(mu)
+                  we(ang2, ang1, kk) = we(ang2, ang1, kk)
+     1                                 + phiint
+                  wo(ang2, ang1, kk) = wo(ang2, ang1, kk)
+     1                                 + phiint
+                  ! When mu' and muj have same sign
+                  phik  = getphi( A*(muk(kk) + B) )
+                  phik1 = getphi( A*(muk(kk+1) + B) )
+                  phiint = (phik1 - phik) * MUintw(mu)
+                  we(ang2, ang1, kk) = we(ang2, ang1, kk)
+     1                                 + phiint
+                  wo(ang2, ang1, kk) = wo(ang2, ang1, kk)
+     1                                 - phiint
+               enddo
+            enddo
+!$omp end do
+!$omp end parallel
+         enddo
+      enddo
+      print *,"Weights computed"
+
+   !   ! Fill in the other triangle of the matrix
+   !   ! Could possibly be done with pointers, but it's a fairly small matrix
+   !   do ang1=1, mgi
+   !      do ang2=1,ang1-1
+   !         do kk=1, nksmps
+   !            we(kk, ang2, ang1) = we(kk, ang2, ang1)
+   !            wo(kk, ang2, ang1) = wo(kk, ang1, ang2)
+   !         enddo
+   !      enddo
+   !   enddo
+
+
+      ! Now, loop through and compute Fk(x',x)
       do iz = 1, itrans
          x=1/theta(iz)
-        
          srfe = 0.d0
          srfo = 0.d0
-
-         do np = 1, nmaxp ! initial energy
-            do jj=1, nmaxp ! final energy
-               do kk=1, nksmps
-                  ! This approximates the integratal at thetaK with a simple sample.  Could maybe integrate over a few points...
-                  ! Probably not a major issue as our grid of thetaK is very fine
-                  Fk(kk) = profil(1,wp(np)/mec2,wp(jj)/mec2, 
-     1                        COS( (thetaK(kk) + thetaK(kk+1))/2),x) / pi
-                  do inang=1, mgi
-                    do outang=1, mgi
-                       ! srf( init_ang, init_en, final_ang, final_en  )
-                       srfe(inang,np,outang,jj) = srfe(inang,np,outang,jj) + Fk(kk) * (w(kk, inang, outang) + w(kk, 1-inang, outang))/2
-                       srfo(inang,np,outang,jj) = srfo(inang,np,outang,jj) + Fk(kk) * (w(kk, inang, outang) - w(kk, 1-inang, outang))/2
-                     enddo
-                  enddo
-               enddo
-            enddo
-         enddo
-
-         do inang=2, mgi
-            do outang=1,inang-1
-               do np=1, nmaxp
-                  do jj=1, nmaxp
-c                    Symmetry:
-                     srfe(inang,np,outang,jj)=srfe(outang,np,inang,jj)
-                     srfo(inang,np,outang,jj)=srfo(outang,np,inang,jj)
-                  enddo
-               enddo
-            enddo
-         enddo
+!$omp parallel
+!$omp& shared(wp, nmaxp, x, muk, limit)
+!$omp& private(np, jlow, jhigh, ecen, problim,
+!$omp&         GOUP, GODOWN, total, maxtot)
+!$omp do
+         !!!
+         ! Prepare Fk(x',x) as in Eq. A5.
+         ! As stated in 2nd paragraph of page '257',
+         ! "The Fk's are computed simply by evaluating R at the midpoint of each interval" 
+         !!!
+         do np=1, nmaxp ! initial energy
+            ecen = wp(np)/mec2
+            call kloop(ecen, ecen, x, nksmps, muk, we, wo, mgi,
+     1                 maxtot, srfe(:,np,:,np), srfo(:,np,:,np))
+            problim = limit * maxtot
+            jlow = np-1
+            jhigh = np+1
+            GOUP = .TRUE.
+            GODOWN = .TRUE.
+            ! final energy
+            do while (GOUP .or. GODOWN)
+               if(jlow.LT.1)       GODOWN = .FALSE.
+               if(jhigh.GT.nmaxp)  GOUP = .FALSE.
+               if(GODOWN)then
+                  call kloop(ecen, wp(jlow)/mec2, x, 
+     1                       nksmps, muk, we, wo, mgi, 
+     2                       total, 
+     3                       srfe(:,np,:,jlow), srfo(:,np,:,jlow))
+                  if(total.LT.problim)then
+                     GODOWN = .FALSE.
+                  elseif(total .GT. maxtot)then
+                     maxtot = total
+                     problim = total*limit
+                  endif
+                  jlow = jlow-1
+               endif
+               if(GOUP)then
+                  call kloop(ecen, wp(jhigh)/mec2, x, 
+     1                       nksmps, muk, we, wo, mgi, 
+     2                       total, 
+     3                       srfe(:,np,:,jhigh), srfo(:,np,:,jhigh))
+                  if(total.LT.problim)then
+                     GOUP = .FALSE.
+                  elseif(total .GT. maxtot)then
+                     maxtot = total
+                     problim = total*limit
+                  endif
+                  jhigh = jhigh+1
+               endif
+            enddo ! GOUP/GODOWN while
+         enddo ! np
+!$omp end do
+!$omp end parallel
 
         
 c        srf( init_ang, init_en, final_ang, final_en  )
@@ -246,6 +305,75 @@ c     Write the iSRF of this temperature to the fits file
 
 c     The FITS file must always be closed before exiting the program. 
       call close_and_save_fits()
-      deallocate(srfe, srfo)
+      deallocate(srfe, srfo, fSInde, fLene, fSIndo, fLeno, we, wo)
       return
       end subroutine
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      PURE DOUBLE PRECISION FUNCTION getphi(v)
+         use constants, only: pi
+         implicit none
+         real*8, INTENT(IN) :: v
+         if (v.LT.-1)then
+           getphi = pi
+         elseif (v.GT.1)then
+           getphi = 0.d0
+         else
+           getphi = ACOS(v)
+         endif
+      END FUNCTION
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      PURE SUBROUTINE kloop(e1, e2, x, nksmps, muk, we, wo, mgi,
+     1                      total, se, so)
+         implicit none
+         INTERFACE
+            PURE double precision function profil(nr,eps,eps1,costh,x)
+               integer, intent(IN) :: nr
+               double precision, intent(IN) :: eps, eps1, costh, x
+            end function profil
+         END INTERFACE
+         integer, intent(IN) :: nksmps, mgi
+         real*8, intent(IN) :: e1, e2, x
+         real*8, intent(IN) :: muk(nksmps)
+         real*8, intent(IN) :: we(mgi, mgi, nksmps)
+         real*8, intent(IN) :: wo(mgi, mgi, nksmps)
+         real*8, intent(OUT) :: total
+         real*8, intent(OUT) :: se(mgi, mgi), so(mgi, mgi)
+         real*8 Fk
+         integer kk, inang, outang
+
+         total = 0
+         se = 0
+         so = 0
+         do kk=1, nksmps
+            Fk =  profil(1, e1, e2, muk(kk), x)
+            total = total + Fk
+            do outang=1, mgi
+               ! Backfill angles from symmetry
+               do inang=1, outang-1
+                  se(inang,outang) = se(inang,outang)
+               enddo
+
+               do inang=outang, mgi
+                  se(inang,outang) = se(inang,outang) + 
+     1                                 Fk * we(inang, outang, kk)
+                  so(inang,outang) = so(inang,outang) + 
+     1                                 Fk * wo(inang, outang, kk)
+                  
+               enddo
+            enddo
+         enddo
+         ! Integration is over evenly space theta
+         ! mu variable is just a shortcut
+
+         ! As total is just used for a prob limit, any scaling factor is irrelevent
+         return
+      END SUBROUTINE
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

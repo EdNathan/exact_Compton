@@ -1,7 +1,8 @@
 c........
-      double precision function bk2 (x)
+      PURE double precision function bk2 (x)
       implicit none
-      double precision i0,i1,k0,k1,x,t,z
+      double precision, intent(IN) :: x
+      double precision i0,i1,k0,k1,t,z
 c.......  Computations of the modified Bessel function of the second
 c.......  order, scaled by exponent
 c.......

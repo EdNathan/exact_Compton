@@ -10,7 +10,7 @@ c        Explicitly export public entities
          integer file_en_dim, file_temp_dim, file_mgi
          integer :: unit=-1, status=0, curr_tab=-1
          character*(100) :: filename='SRF.fits'
-         character*(8) :: code_version='v2.0.1'
+         character*(8) :: code_version='v2.1.0'
 
       contains
       
@@ -174,7 +174,7 @@ c           - Column units
             if(avangle)then
                file_version = '2.0.1'
             else
-               file_version = '3.0.0'
+               file_version = '3.1.0'
             endif
 
             call ftphbn(unit, nrows, tfields, 
